@@ -120,26 +120,68 @@ Nombre,Precio,Supermercado,URL,Fecha,Estado,ProductoSolicitado,Marca,Cantidad,Un
 
 ---
 
+## 🛡️ Política Obligatoria de Atributos Ausentes y Contradicciones (Reglas 1 a 16)
+
+El sistema implementa una política formal y determinística de identidad comercial, asegurando que ningún producto sustituto o incompatible sea aceptado bajo ninguna circunstancia.
+
+### Estados de Atributo
+Todo atributo evaluado durante la validación posee exclusivamente uno de estos tres estados:
+- **`MATCH`**: Existe evidencia suficiente y positiva en la ficha y coincide con el catálogo.
+- **`MISMATCH`**: Existe evidencia explícita de contradicción (prioridad absoluta; siempre obliga a rechazar).
+- **`UNKNOWN`**: Falta de evidencia (no aparece, no puede extraerse o el sitio no lo expone). **UNKNOWN jamás significa MATCH**.
+
+---
+
+### Reglas Centrales de la Política
+
+| Regla | Principio | Comportamiento del RPA |
+| :--- | :--- | :--- |
+| **Regla 1 (MATCH)** | Evidencia positiva | Coincidencia confirmada (ej. catálogo 1 L = PDP "1 Lt."). |
+| **Regla 2 (MISMATCH)** | Contradicción explícita | Prioridad sobre cualquier UNKNOWN. Obliga a rechazar de inmediato. |
+| **Regla 3 (UNKNOWN)** | Falta de evidencia | No demuestra coincidencia ni ausencia. |
+| **Regla 4 (Atributos Obligatorios)** | Demostración de identidad | `producto/tipo`, `marca`, `cantidad` y `unidad` son obligatorios. Si alguno es UNKNOWN -> `INVALID_INSUFFICIENT_DATA` -> Rechazar. |
+| **Regla 5 (Atributos Adicionales)** | Variantes, SKU, EAN | Si coinciden: MATCH; si contradicen: MISMATCH; si no aparecen: UNKNOWN. |
+| **Regla 6 (UNKNOWN Admisible)** | Ausencia sin riesgo | Un adicional UNKNOWN solo se acepta si obligatorios son MATCH, no hay MISMATCH y no hay ambigüedad. |
+| **Regla 7 (Ambigüedad)** | Competidores en catálogo | Si faltan atributos distintivos frente a otros productos posibles (ej. Coca Original vs Zero) -> `INVALID_AMBIGUOUS` -> Rechazar. |
+| **Regla 8 (SKU)** | Identificador de tienda | Coincide: MATCH. Difiere: MISMATCH. No expuesto: UNKNOWN. |
+| **Regla 9 (EAN)** | Código de barras global | Coincide: MATCH. Difiere: MISMATCH. No expuesto: UNKNOWN. |
+| **Regla 10 (Presentación)** | Determinación unívoca | Reconstrucción rigurosa desde cantidad, unidad, título y descripción. Nunca asumir por omisión. |
+| **Regla 11 (Prohibición)** | No inferir desde ausencia | **PROHIBIDO**: "no dice vegetal" no implica leche animal; "no dice zero" no implica original. |
+| **Regla 12 (Prioridad)** | Contradicción manda | Ante al menos un MISMATCH -> `INVALID_MISMATCH` inmediato. |
+| **Regla 13 (Resultados)** | Función formal | `validarIdentidadPDP(...)` devuelve exclusivamente: `VALID_EXACT`, `INVALID_MISMATCH`, `INVALID_AMBIGUOUS`, `INVALID_INSUFFICIENT_DATA`, junto con diagnóstico detallado. |
+| **Regla 14 (VALID_EXACT)** | Condiciones de éxito | Cumplimiento simultáneo de todos los obligatorios, 0 contradicciones y 0 ambigüedades. |
+| **Regla 15 (Dos Capas)** | Listado y PDP | **Capa 1 (Tarjetas):** Filtro DOM previo al clic para descartar incompatibles. **Capa 2 (PDP):** Evaluación estructural completa. |
+| **Regla 16 (Caso Lechería)** | Erradicación de falsos positivos | Solicitud: `Leche La Serenísima 1L`. Hallazgo en Día: `Bebida Vegetal Almendra...` -> Detecta `producto/tipo = MISMATCH` -> `INVALID_MISMATCH` -> Rechazado, `EsEquivalente = 'NO'`, `Precio = 'N/D'`. |
+
+> **REGLA DE ORO:**
+> `MATCH` = evidencia positiva de coincidencia.
+> `MISMATCH` = evidencia positiva de contradicción.
+> `UNKNOWN` = falta de evidencia.
+> `UNKNOWN` jamás puede transformarse automáticamente en `MATCH`.
+> `MISMATCH` siempre obliga a rechazar.
+
+---
+
 ## 🧪 Pruebas Automatizadas y Verificación
 
-El proyecto cuenta con verificación automatizada en múltiples niveles:
+El proyecto cuenta con verificación automatizada integral en múltiples capas:
 
-### 1. Batería de 33 Pruebas Unitarias Determinísticas (Tests 1-24 y 31-39)
-Ejecuta la suite completa de 33 pruebas que validan entradas, identidad, jerarquía DOM, PDP, parseo de precios, stock, promociones y el modo interactivo por terminal:
+### 1. Batería de 50 Pruebas Unitarias Determinísticas (Tests 1-24, 31-39 y 40-56)
+Ejecuta la suite completa de 50 pruebas unitarias en Node.js que verifican campos de entrada, separación de productos, jerarquía DOM, PDP, parseo de precios, stock, promociones, menú interactivo y las 16 reglas de la política de identidad:
 ```bash
 node tests/test_suite.js
 ```
-*Salida esperada:* `[EXITO TOTAL] Las 33 pruebas pasaron satisfactoriamente.`
+*Salida esperada:* `[EXITO TOTAL] Las 50 pruebas pasaron satisfactoriamente.`
 
-### 2. Smoke Test de TagUI
-Verifica que TagUI puede lanzar el navegador, interactuar con el DOM y escribir archivos locales:
+### 2. Smoke Test de TagUI en Modo Visible
+Verifica que el motor TagUI opera correctamente interactuando con Chrome a pantalla completa, manipulando el DOM y persistiendo archivos locales:
 ```bash
-tagui tests/smoke_tagui.tag -h
+tagui tests/smoke_tagui.tag
 ```
 *Salida esperada:* `[OK] Motor TagUI operativo, interactua con DOM y escribe archivos.`
 
-### 3. Verificación de Integridad del Catálogo
-Verifica que no existan duplicados ni inconsistencias en `catalogo/productos.json`:
+### 3. Verificación de Integridad y Atributos del Catálogo
+Verifica que no existan duplicados de ID, SKU o EAN y que todos los productos contengan sus metadatos de identidad:
 ```bash
 node catalogo/actualizar_catalogo.js verificar
 ```

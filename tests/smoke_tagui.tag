@@ -26,3 +26,5 @@ if dom_result equals to 'TagUI Smoke Test OK'
     echo ============================================================
 else
     echo [ERROR] Fallo en la ejecucion del smoke test de TagUI.
+
+

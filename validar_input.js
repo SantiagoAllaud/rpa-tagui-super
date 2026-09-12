@@ -183,6 +183,10 @@ for (let i = 1; i < lines.length; i++) {
         console.log(`     Disponibilidad en catalogo -> Carrefour: ${carrefourRef ? 'Si' : 'No'} | COTO: ${cotoRef ? 'Si' : 'No'} | Dia %: ${diaRef ? 'Si' : 'No'}`);
 
         const justifEq = coincidencia.justificacion_equivalencia || '';
+        const ident = coincidencia.atributos_identidad || {};
+        const atrTipo = ident.tipo || coincidencia.producto || '';
+        const atrVar = ident.variante || '';
+        const atrInc = Array.isArray(ident.incompatibles) ? ident.incompatibles.join('|') : '';
 
         productosValidados.push({
             id_producto: coincidencia.id_producto,
@@ -201,7 +205,10 @@ for (let i = 1; i < lines.length; i++) {
             dia_url: diaRef ? (diaRef.url || '') : '',
             dia_sku: diaRef ? (diaRef.sku || 'N/D') : 'N/D',
             ean: coincidencia.ean || 'N/D',
-            justificacion_equivalencia: justifEq
+            justificacion_equivalencia: justifEq,
+            atributos_tipo: atrTipo,
+            atributos_variante: atrVar,
+            atributos_incompatibles: atrInc
         });
     }
 }
@@ -216,7 +223,7 @@ if (hasError) {
 }
 
 // 4. Generar archivo de trabajo input_tagui.csv (solo si TODAS las filas son válidas)
-const taguiHeader = 'id_producto,producto,marca,cantidad,unidad,presentacion,carrefour_query,carrefour_url,carrefour_sku,coto_query,coto_url,coto_sku,dia_query,dia_url,dia_sku,ean,justificacion_equivalencia';
+const taguiHeader = 'id_producto,producto,marca,cantidad,unidad,presentacion,carrefour_query,carrefour_url,carrefour_sku,coto_query,coto_url,coto_sku,dia_query,dia_url,dia_sku,ean,justificacion_equivalencia,atributos_tipo,atributos_variante,atributos_incompatibles';
 const taguiRows = productosValidados.map(p => {
     return [
         `"${p.id_producto}"`,
@@ -235,7 +242,10 @@ const taguiRows = productosValidados.map(p => {
         `"${p.dia_url}"`,
         `"${p.dia_sku}"`,
         `"${p.ean}"`,
-        `"${p.justificacion_equivalencia}"`
+        `"${p.justificacion_equivalencia}"`,
+        `"${p.atributos_tipo}"`,
+        `"${p.atributos_variante}"`,
+        `"${p.atributos_incompatibles}"`
     ].join(',');
 });
 

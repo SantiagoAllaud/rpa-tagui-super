@@ -32,6 +32,17 @@
         "nombre_original": "Galletitas Oreo 117g",
         "termino_busqueda": "Oreo 117g"
       }
+    },
+    "atributos_identidad": {
+      "tipo": "galletitas",
+      "variante": "original",
+      "incompatibles": [
+        "chocolate",
+        "golden",
+        "frutilla",
+        "bañadas",
+        "milka"
+      ]
     }
   },
   {
@@ -67,6 +78,17 @@
         "nombre_original": "Galletitas Oreo Rellenas Con Crema Sabor Original Menos Sodio 118 Gr.",
         "termino_busqueda": "Galletitas Oreo 118g"
       }
+    },
+    "atributos_identidad": {
+      "tipo": "galletitas",
+      "variante": "original",
+      "incompatibles": [
+        "chocolate",
+        "golden",
+        "frutilla",
+        "bañadas",
+        "milka"
+      ]
     }
   },
   {
@@ -101,6 +123,17 @@
         "nombre_original": "Galletitas Rellenas Chocolate Oreo 154 Gr.",
         "termino_busqueda": "Oreo 154g"
       }
+    },
+    "atributos_identidad": {
+      "tipo": "galletitas",
+      "variante": "original",
+      "incompatibles": [
+        "chocolate",
+        "golden",
+        "frutilla",
+        "bañadas",
+        "milka"
+      ]
     }
   },
   {
@@ -135,6 +168,14 @@
         "nombre_original": "Galletitas Chocolate Chocolinas 250 Gr.",
         "termino_busqueda": "Chocolinas 250g"
       }
+    },
+    "atributos_identidad": {
+      "tipo": "galletitas",
+      "variante": "chocolate",
+      "incompatibles": [
+        "vainilla",
+        "rellenas"
+      ]
     }
   },
   {
@@ -169,6 +210,13 @@
         "nombre_original": "Galletitas Pepitos Con Chips De Chocolate 119 Gr.",
         "termino_busqueda": "Pepitos 119g"
       }
+    },
+    "atributos_identidad": {
+      "tipo": "galletitas",
+      "variante": "chips",
+      "incompatibles": [
+        "rellenas"
+      ]
     }
   },
   {
@@ -203,6 +251,13 @@
         "nombre_original": "Galletitas Sonrisas 118 Gr.",
         "termino_busqueda": "Sonrisas 118g"
       }
+    },
+    "atributos_identidad": {
+      "tipo": "galletitas",
+      "variante": "frambuesa",
+      "incompatibles": [
+        "chocolate"
+      ]
     }
   },
   {
@@ -237,6 +292,21 @@
         "nombre_original": "Leche Entera La Serenisima Larga Vida 1 Lt.",
         "termino_busqueda": "Leche La Serenisima 1L"
       }
+    },
+    "atributos_identidad": {
+      "tipo": "leche",
+      "variante": "entera",
+      "incompatibles": [
+        "vegetal",
+        "almendra",
+        "soja",
+        "avena",
+        "coco",
+        "arroz",
+        "chocolatada",
+        "descremada",
+        "parcialmente descremada"
+      ]
     }
   },
   {
@@ -271,6 +341,21 @@
         "nombre_original": "Leche Entera Larga Vida Ilolay 1 Lt.",
         "termino_busqueda": "Leche Ilolay 1L"
       }
+    },
+    "atributos_identidad": {
+      "tipo": "leche",
+      "variante": "entera",
+      "incompatibles": [
+        "vegetal",
+        "almendra",
+        "soja",
+        "avena",
+        "coco",
+        "arroz",
+        "chocolatada",
+        "descremada",
+        "parcialmente descremada"
+      ]
     }
   },
   {
@@ -305,6 +390,18 @@
         "nombre_original": "Yerba Mate Playadito Suave 1 Kg.",
         "termino_busqueda": "Yerba Playadito 1kg"
       }
+    },
+    "atributos_identidad": {
+      "tipo": "yerba",
+      "variante": "suave con palo",
+      "incompatibles": [
+        "sin palo",
+        "despalada",
+        "compuesta",
+        "hierbas",
+        "menta",
+        "cedron"
+      ]
     }
   },
   {
@@ -339,6 +436,18 @@
         "nombre_original": "Yerba Mate Playadito Suave 500 Gr.",
         "termino_busqueda": "Yerba Playadito 500g"
       }
+    },
+    "atributos_identidad": {
+      "tipo": "yerba",
+      "variante": "suave con palo",
+      "incompatibles": [
+        "sin palo",
+        "despalada",
+        "compuesta",
+        "hierbas",
+        "menta",
+        "cedron"
+      ]
     }
   },
   {
@@ -373,6 +482,16 @@
         "nombre_original": "Yerba Mate Taragüi 4 Flex 1 Kg.",
         "termino_busqueda": "Yerba Taragui 1kg"
       }
+    },
+    "atributos_identidad": {
+      "tipo": "yerba",
+      "variante": "con palo tradicional",
+      "incompatibles": [
+        "sin palo",
+        "despalada",
+        "compuesta",
+        "hierbas"
+      ]
     }
   },
   {
@@ -407,6 +526,16 @@
         "nombre_original": "Yerba Mate Amanda Tradicional 1 Kg.",
         "termino_busqueda": "Yerba Amanda 1kg"
       }
+    },
+    "atributos_identidad": {
+      "tipo": "yerba",
+      "variante": "tradicional con palo",
+      "incompatibles": [
+        "sin palo",
+        "despalada",
+        "compuesta",
+        "hierbas"
+      ]
     }
   },
   {
@@ -441,6 +570,16 @@
         "nombre_original": "Aceite de Girasol Natura Botella 900 Ml.",
         "termino_busqueda": "Aceite Natura 900ml"
       }
+    },
+    "atributos_identidad": {
+      "tipo": "aceite",
+      "variante": "girasol",
+      "incompatibles": [
+        "maiz",
+        "oliva",
+        "mezcla",
+        "soja"
+      ]
     }
   },
   {
@@ -475,6 +614,16 @@
         "nombre_original": "Aceite de Girasol Cocinero 900 Ml.",
         "termino_busqueda": "Aceite Cocinero 900ml"
       }
+    },
+    "atributos_identidad": {
+      "tipo": "aceite",
+      "variante": "girasol",
+      "incompatibles": [
+        "maiz",
+        "oliva",
+        "mezcla",
+        "soja"
+      ]
     }
   },
   {
@@ -509,6 +658,16 @@
         "nombre_original": "Aceite de Girasol Cañuelas 900 Ml.",
         "termino_busqueda": "Aceite Canuelas 900ml"
       }
+    },
+    "atributos_identidad": {
+      "tipo": "aceite",
+      "variante": "girasol",
+      "incompatibles": [
+        "maiz",
+        "oliva",
+        "mezcla",
+        "soja"
+      ]
     }
   },
   {
@@ -543,6 +702,20 @@
         "nombre_original": "Fideos Spaghetti Matarazzo Paquete 500 Gr.",
         "termino_busqueda": "Fideos Matarazzo 500g"
       }
+    },
+    "atributos_identidad": {
+      "tipo": "fideos",
+      "variante": "spaghetti",
+      "incompatibles": [
+        "tirabuzon",
+        "mostachol",
+        "tallarines",
+        "fusilli",
+        "penne",
+        "moñitas",
+        "guisero",
+        "coditos"
+      ]
     }
   },
   {
@@ -577,6 +750,14 @@
         "nombre_original": "Fideos Lucchetti Dedalitos 500 Gr.",
         "termino_busqueda": "Fideos Lucchetti 500g"
       }
+    },
+    "atributos_identidad": {
+      "tipo": "fideos",
+      "variante": "guiseros",
+      "incompatibles": [
+        "spaghetti",
+        "tallarines"
+      ]
     }
   },
   {
@@ -611,6 +792,18 @@
         "nombre_original": "Arroz Parboil Gallo 1 Kg.",
         "termino_busqueda": "Arroz Gallo 1kg"
       }
+    },
+    "atributos_identidad": {
+      "tipo": "arroz",
+      "variante": "oro parboil",
+      "incompatibles": [
+        "doble carolina",
+        "yamani",
+        "integral",
+        "carnaroli",
+        "arborio",
+        "sushi"
+      ]
     }
   },
   {
@@ -645,6 +838,15 @@
         "nombre_original": "Arroz Dos Hermanos Parboil 1 Kg.",
         "termino_busqueda": "Arroz Dos Hermanos 1kg"
       }
+    },
+    "atributos_identidad": {
+      "tipo": "arroz",
+      "variante": "parboil",
+      "incompatibles": [
+        "doble carolina",
+        "yamani",
+        "integral"
+      ]
     }
   },
   {
@@ -679,6 +881,16 @@
         "nombre_original": "Azucar Ledesma Refinado Superior 1 Kg.",
         "termino_busqueda": "Azucar Ledesma 1kg"
       }
+    },
+    "atributos_identidad": {
+      "tipo": "azucar",
+      "variante": "comun tipo a",
+      "incompatibles": [
+        "impalpable",
+        "rubia",
+        "mascabo",
+        "edulcorante"
+      ]
     }
   },
   {
@@ -713,6 +925,15 @@
         "nombre_original": "Harina Integral Pureza 1 Kg.",
         "termino_busqueda": "Harina Pureza 1kg"
       }
+    },
+    "atributos_identidad": {
+      "tipo": "harina",
+      "variante": "integral",
+      "incompatibles": [
+        "leudante",
+        "0000",
+        "pizza"
+      ]
     }
   },
   {
@@ -747,6 +968,17 @@
         "nombre_original": "Gaseosa Coca-Cola Sabor Original 1,5 Lt.",
         "termino_busqueda": "Coca-Cola 1.5L"
       }
+    },
+    "atributos_identidad": {
+      "tipo": "gaseosa",
+      "variante": "original",
+      "incompatibles": [
+        "zero",
+        "sin azucar",
+        "light",
+        "vainilla",
+        "cherry"
+      ]
     }
   },
   {
@@ -781,6 +1013,17 @@
         "nombre_original": "Gaseosa Coca-Cola Sabor Original 2.25 Lt.",
         "termino_busqueda": "Coca-Cola 2.25L"
       }
+    },
+    "atributos_identidad": {
+      "tipo": "gaseosa",
+      "variante": "original",
+      "incompatibles": [
+        "zero",
+        "sin azucar",
+        "light",
+        "vainilla",
+        "cherry"
+      ]
     }
   },
   {
@@ -815,6 +1058,14 @@
         "nombre_original": "Gaseosa Sprite Lima-Limón 1,5 Lt.",
         "termino_busqueda": "Sprite 1.5L"
       }
+    },
+    "atributos_identidad": {
+      "tipo": "gaseosa",
+      "variante": "lima limon original",
+      "incompatibles": [
+        "zero",
+        "sin azucar"
+      ]
     }
   }
 ]

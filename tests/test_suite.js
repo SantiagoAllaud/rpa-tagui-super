@@ -1,5 +1,5 @@
 // ==============================================================================
-// tests/test_suite.js - Batería Integral de 33 Pruebas Automatizadas
+// tests/test_suite.js - Batería Integral de 50 Pruebas Automatizadas
 // UTN FRCU - Tecnologías para la Automatización
 // Ejecución: node tests/test_suite.js
 // ==============================================================================
@@ -422,15 +422,234 @@ assert(
 );
 
 // -----------------------------------------------------------------------------
+// BLOQUE 9: POLÍTICA OBLIGATORIA DE ATRIBUTOS AUSENTES Y CONTRADICCIONES (REGLAS 1-16)
+// -----------------------------------------------------------------------------
+console.log('\n[BLOQUE 9] Política Obligatoria de Atributos Ausentes y Contradicciones (Reglas 1-16)');
+
+const { validarIdentidadPDP, evaluarTarjetaCapa1 } = taguiLocal;
+const lecheSerenisima = catalogo.find(p => p.id_producto === 'LEC_LASERENISIMA_1L');
+const coca15L = catalogo.find(p => p.id_producto === 'GAS_COCACOLA_1.5L');
+const oreo117 = catalogo.find(p => p.id_producto === 'GAL_OREO_117G');
+const playadito1kg = catalogo.find(p => p.id_producto === 'YER_PLAYADITO_1KG');
+const matarazzo500g = catalogo.find(p => p.id_producto === 'FID_MATARAZZO_500G');
+const gallo1kg = catalogo.find(p => p.id_producto === 'ARR_GALLO_1KG');
+const azucarLedesma = catalogo.find(p => p.id_producto === 'AZU_LEDESMA_1KG');
+
+// TEST 40: Regla 16 - Caso Lechería Día: Leche vs Bebida Vegetal
+const resTest40 = validarIdentidadPDP(lecheSerenisima, {
+    titulo: 'Bebida Vegetal Almendra La Serenísima Sin Endulzar 1 Lt.',
+    supermercado: 'Dia'
+}, catalogo);
+assert(
+    resTest40.resultado === 'INVALID_MISMATCH' &&
+    resTest40.esEquivalente === 'NO' &&
+    resTest40.valido === false &&
+    resTest40.diagnostico.some(d => d.atributo === 'producto/tipo' && d.estado === 'MISMATCH'),
+    '40: (Regla 16) Caso Lechería: Leche vs Bebida Vegetal Almendra detecta tipo/producto = MISMATCH -> INVALID_MISMATCH'
+);
+
+// TEST 41: Regla 7 - Ambigüedad por variante desconocida ante competidores en catálogo
+const catalogoSimuladoAmbiguedad = [
+    { id_producto: 'GAS_COCA_15L', activo: true, marca: 'Coca-Cola', producto: 'Gaseosa', cantidad: 1.5, unidad: 'L', presentacion: '1.5L', atributos_identidad: { tipo: 'gaseosa', variante: 'original', incompatibles: ['zero', 'light'] } },
+    { id_producto: 'GAS_COCA_ZERO_15L', activo: true, marca: 'Coca-Cola', producto: 'Gaseosa', cantidad: 1.5, unidad: 'L', presentacion: '1.5L', atributos_identidad: { tipo: 'gaseosa', variante: 'zero', incompatibles: ['original'] } }
+];
+const resTest41 = validarIdentidadPDP(catalogoSimuladoAmbiguedad[0], {
+    titulo: 'Gaseosa Coca-Cola 1.5 L'
+}, catalogoSimuladoAmbiguedad);
+assert(
+    resTest41.resultado === 'INVALID_AMBIGUOUS' &&
+    resTest41.esEquivalente === 'NO' &&
+    resTest41.valido === false,
+    '41: (Regla 7) Ambigüedad: PDP "Coca-Cola 1.5L" sin variante ante Original y Zero en catálogo genera INVALID_AMBIGUOUS'
+);
+
+// TEST 42: Regla 2 & 12 - Contradicción en variante (Original vs Zero)
+const resTest42 = validarIdentidadPDP(coca15L, {
+    titulo: 'Gaseosa Coca-Cola Zero 1.5 L'
+}, catalogo);
+assert(
+    resTest42.resultado === 'INVALID_MISMATCH' &&
+    resTest42.esEquivalente === 'NO' &&
+    resTest42.valido === false,
+    '42: (Regla 2 & 12) Variante contradictoria (solicitado Original, detectado Zero) produce INVALID_MISMATCH prioritario'
+);
+
+// TEST 43: Regla 1 & 14 - Coincidencia exacta de variante (VALID_EXACT)
+const resTest43 = validarIdentidadPDP(coca15L, {
+    titulo: 'Gaseosa Coca-Cola Sabor Original 1.5 L'
+}, catalogo);
+assert(
+    resTest43.resultado === 'VALID_EXACT' &&
+    resTest43.esEquivalente === 'SI' &&
+    resTest43.valido === true,
+    '43: (Regla 1 & 14) Coincidencia comercial exacta y variante original positiva produce VALID_EXACT'
+);
+
+// TEST 44: Regla 2 & 10 - Diferencia en cantidad sin equivalencia (Oreo 117g vs 118g)
+const resTest44 = validarIdentidadPDP(oreo117, {
+    titulo: 'Galletitas Oreo Rellenas Con Crema 118g'
+}, catalogo);
+assert(
+    resTest44.resultado === 'INVALID_MISMATCH' &&
+    resTest44.esEquivalente === 'NO' &&
+    resTest44.diagnostico.some(d => d.atributo === 'cantidad' && d.estado === 'MISMATCH'),
+    '44: (Regla 2 & 10) Diferencia de cantidad (117g vs 118g) sin justificación produce MISMATCH -> INVALID_MISMATCH'
+);
+
+// TEST 45: Regla 2 - Diferencia de presentación (Oreo 118g vs 154g)
+const resTest45 = validarIdentidadPDP(itemOreo118, {
+    titulo: 'Galletitas Oreo 154g'
+}, catalogo);
+assert(
+    resTest45.resultado === 'INVALID_MISMATCH' &&
+    resTest45.esEquivalente === 'NO',
+    '45: (Regla 2) Diferencia de presentación (118g vs 154g) produce INVALID_MISMATCH'
+);
+
+// TEST 46: Regla 2 - Diferencia de peso en Yerba (1kg vs 500g)
+const resTest46 = validarIdentidadPDP(playadito1kg, {
+    titulo: 'Yerba Mate Playadito Con Palo 500g'
+}, catalogo);
+assert(
+    resTest46.resultado === 'INVALID_MISMATCH' &&
+    resTest46.esEquivalente === 'NO',
+    '46: (Regla 2) Yerba Playadito 1kg vs 500g produce INVALID_MISMATCH'
+);
+
+// TEST 47: Regla 2 - Variante incompatible en Yerba ("despalada")
+const resTest47 = validarIdentidadPDP(playadito1kg, {
+    titulo: 'Yerba Mate Playadito Despalada Sin Palo 1kg'
+}, catalogo);
+assert(
+    resTest47.resultado === 'INVALID_MISMATCH' &&
+    resTest47.esEquivalente === 'NO' &&
+    resTest47.diagnostico.some(d => d.atributo === 'producto/tipo' && d.estado === 'MISMATCH'),
+    '47: (Regla 2) Variante incompatible en Yerba ("despalada") produce INVALID_MISMATCH'
+);
+
+// TEST 48: Regla 2 - Variante incompatible en Fideos (Spaghetti vs Tirabuzón)
+const resTest48 = validarIdentidadPDP(matarazzo500g, {
+    titulo: 'Fideos Matarazzo Tirabuzón 500g'
+}, catalogo);
+assert(
+    resTest48.resultado === 'INVALID_MISMATCH' &&
+    resTest48.esEquivalente === 'NO',
+    '48: (Regla 2) Fideos Matarazzo Spaghetti vs Tirabuzón produce INVALID_MISMATCH'
+);
+
+// TEST 49: Regla 2 - Variante incompatible en Arroz (Oro Parboil vs Doble Carolina)
+const resTest49 = validarIdentidadPDP(gallo1kg, {
+    titulo: 'Arroz Gallo Doble Carolina 1kg'
+}, catalogo);
+assert(
+    resTest49.resultado === 'INVALID_MISMATCH' &&
+    resTest49.esEquivalente === 'NO',
+    '49: (Regla 2) Arroz Gallo Oro Parboil vs Doble Carolina produce INVALID_MISMATCH'
+);
+
+// TEST 50: Regla 4 - Falta de atributo obligatorio marca
+const resTest50 = validarIdentidadPDP(lecheSerenisima, {
+    titulo: 'Leche Entera Clasica 1 Lt.'
+}, catalogo);
+assert(
+    resTest50.resultado === 'INVALID_INSUFFICIENT_DATA' || resTest50.resultado === 'INVALID_MISMATCH',
+    '50: (Regla 4) Falta de marca o marca discordante en PDP es rechazada'
+);
+
+// TEST 51: Regla 4 - Falta de atributo obligatorio cantidad
+const resTest51 = validarIdentidadPDP(playadito1kg, {
+    titulo: 'Yerba Mate Playadito Tradicional'
+}, catalogo);
+assert(
+    resTest51.resultado === 'INVALID_INSUFFICIENT_DATA' &&
+    resTest51.esEquivalente === 'NO',
+    '51: (Regla 4) Falta de cantidad/unidad en PDP produce INVALID_INSUFFICIENT_DATA'
+);
+
+// TEST 52: Regla 8 - SKU coincidente vs discordante
+const skuCarrefourReal = itemOreo118.supermercados.Carrefour.sku; // '126384'
+const resTest52Match = validarIdentidadPDP(itemOreo118, {
+    titulo: 'Galletitas Oreo 118g',
+    sku: skuCarrefourReal,
+    supermercado: 'Carrefour'
+}, catalogo);
+const resTest52Mismatch = validarIdentidadPDP(itemOreo118, {
+    titulo: 'Galletitas Oreo 118g',
+    sku: '99999_INCORRECTO',
+    supermercado: 'Carrefour'
+}, catalogo);
+assert(
+    resTest52Match.diagnostico.some(d => d.atributo === 'sku' && d.estado === 'MATCH') &&
+    resTest52Mismatch.resultado === 'INVALID_MISMATCH' &&
+    resTest52Mismatch.diagnostico.some(d => d.atributo === 'sku' && d.estado === 'MISMATCH'),
+    '52: (Regla 8) SKU coincidente es MATCH; SKU discordante produce INVALID_MISMATCH'
+);
+
+// TEST 53: Regla 9 - EAN coincidente vs discordante
+const resTest53Match = validarIdentidadPDP(itemOreo118, {
+    titulo: 'Galletitas Oreo 118g',
+    ean: '7622210819124'
+}, catalogo);
+const resTest53Mismatch = validarIdentidadPDP(itemOreo118, {
+    titulo: 'Galletitas Oreo 118g',
+    ean: '0000000000000'
+}, catalogo);
+assert(
+    resTest53Match.diagnostico.some(d => d.atributo === 'ean' && d.estado === 'MATCH') &&
+    resTest53Mismatch.resultado === 'INVALID_MISMATCH' &&
+    resTest53Mismatch.diagnostico.some(d => d.atributo === 'ean' && d.estado === 'MISMATCH'),
+    '53: (Regla 9) EAN coincidente es MATCH; EAN discordante produce INVALID_MISMATCH'
+);
+
+// TEST 54: Regla 6 & 8 - UNKNOWN admisible cuando no hay ambigüedad
+const resTest54 = validarIdentidadPDP(azucarLedesma, {
+    titulo: 'Azucar Ledesma 1 Kg'
+}, catalogo);
+assert(
+    resTest54.resultado === 'VALID_EXACT' &&
+    resTest54.esEquivalente === 'SI',
+    '54: (Regla 6 & 8) UNKNOWN en SKU/EAN/variante es admisible cuando obligatorios son MATCH y no hay ambigüedad'
+);
+
+// TEST 55: Regla 11 - Prohibición de inferir positivamente desde una ausencia
+const resTest55 = validarIdentidadPDP(lecheSerenisima, {
+    titulo: 'La Serenísima 1 Lt.'
+}, catalogo);
+assert(
+    resTest55.resultado === 'INVALID_INSUFFICIENT_DATA' &&
+    resTest55.diagnostico.some(d => d.atributo === 'producto/tipo' && d.estado === 'UNKNOWN'),
+    '55: (Regla 11) La ausencia de "vegetal" no demuestra positivamente "leche"; sin sustantivo es UNKNOWN -> INVALID_INSUFFICIENT_DATA'
+);
+
+// TEST 56: Regla 15 - Capa 1 DOM Filter descarta tarjetas incompatibles
+const cardIncompatible = {
+    innerText: 'Bebida Vegetal Almendra La Serenísima Sin Endulzar 1 Lt. $ 2.500',
+    href: 'https://diaonline.supermercadosdia.com.ar/bebida-vegetal/p',
+    dataSku: '98765'
+};
+const cardValida = {
+    innerText: 'Leche Entera Clásica La Serenísima 1 Lt. $ 1.850',
+    href: 'https://diaonline.supermercadosdia.com.ar/leche-entera/p',
+    dataSku: '74125'
+};
+const resCapa1Incompatible = evaluarTarjetaCapa1(cardIncompatible.innerText, cardIncompatible.href, cardIncompatible.dataSku, lecheSerenisima, catalogo);
+const resCapa1Valida = evaluarTarjetaCapa1(cardValida.innerText, cardValida.href, cardValida.dataSku, lecheSerenisima, catalogo);
+assert(
+    resCapa1Incompatible.resultado === 'REJECTED_INCOMPATIBLE' &&
+    resCapa1Valida.resultado === 'FOUND_EXACT',
+    '56: (Regla 15) Capa 1 DOM Filter descarta tarjetas con términos incompatibles antes de hacer click'
+);
+
+// -----------------------------------------------------------------------------
 // RESUMEN FINAL
 // -----------------------------------------------------------------------------
 console.log('\n=====================================================================');
-console.log(`RESULTADO DE LA BATERIA: ${passedTests}/33 PRUEBAS EXITOSAS`);
+console.log(`RESULTADO DE LA BATERIA: ${passedTests}/${passedTests + failedTests} PRUEBAS EXITOSAS`);
 if (failedTests > 0) {
     console.error(`\x1b[31m[FALLO] ${failedTests} pruebas fallaron.\x1b[0m`);
     process.exit(1);
 } else {
-    console.log('\x1b[32m[EXITO TOTAL] Las 33 pruebas pasaron satisfactoriamente.\x1b[0m');
+    console.log(`\x1b[32m[EXITO TOTAL] Las ${passedTests} pruebas pasaron satisfactoriamente.\x1b[0m`);
     console.log('El sistema se encuentra en un estado determinístico, robusto y verificable.');
     console.log('=====================================================================\n');
     process.exit(0);
