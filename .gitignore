@@ -11,3 +11,9 @@ rpas ejemplos/
 # Entornos virtuales o caché de Python
 __pycache__/
 *.pyc
+
+# Salidas de pruebas
+*smoke_output.txt
+tests/tests/
+
+

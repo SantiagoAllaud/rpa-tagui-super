@@ -193,10 +193,14 @@ for (let i = 1; i < lines.length; i++) {
             presentacion: coincidencia.presentacion,
             carrefour_query: carrefourRef ? (carrefourRef.termino_busqueda || coincidencia.producto + ' ' + coincidencia.marca) : 'N/D',
             carrefour_url: carrefourRef ? (carrefourRef.url || '') : '',
+            carrefour_sku: carrefourRef ? (carrefourRef.sku || 'N/D') : 'N/D',
             coto_query: cotoRef ? (cotoRef.termino_busqueda || coincidencia.producto + ' ' + coincidencia.marca) : 'N/D',
             coto_url: cotoRef ? (cotoRef.url || '') : '',
+            coto_sku: cotoRef ? (cotoRef.sku || 'N/D') : 'N/D',
             dia_query: diaRef ? (diaRef.termino_busqueda || coincidencia.producto + ' ' + coincidencia.marca) : 'N/D',
             dia_url: diaRef ? (diaRef.url || '') : '',
+            dia_sku: diaRef ? (diaRef.sku || 'N/D') : 'N/D',
+            ean: coincidencia.ean || 'N/D',
             justificacion_equivalencia: justifEq
         });
     }
@@ -212,7 +216,7 @@ if (hasError) {
 }
 
 // 4. Generar archivo de trabajo input_tagui.csv (solo si TODAS las filas son válidas)
-const taguiHeader = 'id_producto,producto,marca,cantidad,unidad,presentacion,carrefour_query,carrefour_url,coto_query,coto_url,dia_query,dia_url,justificacion_equivalencia';
+const taguiHeader = 'id_producto,producto,marca,cantidad,unidad,presentacion,carrefour_query,carrefour_url,carrefour_sku,coto_query,coto_url,coto_sku,dia_query,dia_url,dia_sku,ean,justificacion_equivalencia';
 const taguiRows = productosValidados.map(p => {
     return [
         `"${p.id_producto}"`,
@@ -223,10 +227,14 @@ const taguiRows = productosValidados.map(p => {
         `"${p.presentacion}"`,
         `"${p.carrefour_query}"`,
         `"${p.carrefour_url}"`,
+        `"${p.carrefour_sku}"`,
         `"${p.coto_query}"`,
         `"${p.coto_url}"`,
+        `"${p.coto_sku}"`,
         `"${p.dia_query}"`,
         `"${p.dia_url}"`,
+        `"${p.dia_sku}"`,
+        `"${p.ean}"`,
         `"${p.justificacion_equivalencia}"`
     ].join(',');
 });

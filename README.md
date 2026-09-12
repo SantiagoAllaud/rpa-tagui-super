@@ -70,6 +70,10 @@ rpa tagui super/
 │   ├── productos.json           # Catálogo local de productos normalizados y referencias de tiendas
 │   └── actualizar_catalogo.js   # Script administrativo para listar, verificar o actualizar el catálogo
 │
+├── tests/
+│   ├── test_suite.js            # Batería completa de 24 pruebas unitarias determinísticas
+│   └── smoke_tagui.tag          # Smoke test para verificar operatividad del motor TagUI
+│
 ├── validar_input.js             # Validador estricto previo a la ejecución de TagUI
 ├── input.csv                    # Archivo de entrada con las 4 columnas obligatorias
 ├── input_tagui.csv              # Archivo intermedio generado con referencias resueltas para TagUI
@@ -89,51 +93,81 @@ El archivo requiere las 4 columnas para garantizar que el producto esté unívoc
 
 ```csv
 producto,marca,cantidad,unidad
-Galletitas,Oreo,117,g
+Galletitas,Oreo,118,g
 Leche,La Serenisima,1,L
 Yerba,Playadito,1,kg
 Aceite,Natura,900,ml
 Fideos,Matarazzo,500,g
 ```
 
+> **Nota sobre identidad estricta (ej. 117g vs 118g):**
+> La identidad del producto se verifica de manera exacta. Por ejemplo, `GAL_OREO_118G` corresponde al producto real actualmente disponible en góndola en Argentina con EAN y SKUs verificados. Si se ingresa una presentación histórica no disponible como `117g`, el sistema no adivina ni toma arbitrariamente `118g` o `154g`, marcando el resultado fehacientemente como no coincidente salvo justificación explícita de equivalencia en el catálogo.
+
 ### 2. Salida Enriquecida (`resultados.csv`)
-Archivo CSV con esquema completo de 15 columnas:
+Archivo CSV con esquema completo y sanitizado de **15 columnas**:
 
 ```csv
 Nombre,Precio,Supermercado,URL,Fecha,Estado,ProductoSolicitado,Marca,Cantidad,Unidad,Presentacion,PrecioNumerico,Stock,Promocion,EsEquivalente
-"Galletitas Rellenas de Vainilla Oreo 117 g","$ 1.450,00","Carrefour","https://...","12/09/2026","OK","Galletitas Oreo 117g","Oreo","117","g","117g","1450","DISPONIBLE","2do al 70%","SI"
-"Galletitas Dulces Rellenas OREO 117 Gr","$ 1.390,00","COTO","https://...","12/09/2026","OK","Galletitas Oreo 117g","Oreo","117","g","117g","1390","DISPONIBLE","Sin promocion","SI"
-"Galletitas Rellenas Chocolate Oreo 117 Gr.","$ 1.420,00","Día %","https://...","12/09/2026","OK","Galletitas Oreo 117g","Oreo","117","g","117g","1420","DISPONIBLE","Precio Club","SI"
+"Galletitas Dulces Rellenas OREO 118 Gr","$ 1.450,00","Carrefour","https://...","12/09/2026","OK","Galletitas Oreo 118g","Oreo","118","g","118g","1450","DISPONIBLE","2do al 70%","SI"
+"Galletitas Dulces Rellenas OREO 118 Gr","$ 1.390,00","COTO","https://...","12/09/2026","OK","Galletitas Oreo 118g","Oreo","118","g","118g","1390","DISPONIBLE","Sin promocion","SI"
+"Galletitas Rellenas Vainilla Oreo 118 Gr.","$ 1.420,00","Día %","https://...","12/09/2026","OK","Galletitas Oreo 118g","Oreo","118","g","118g","1420","DISPONIBLE","Precio Club","SI"
 ```
+
+- **Stock:** Refleja fehacientemente `DISPONIBLE`, `AGOTADO` o `NO_VERIFICADO`.
+- **Promocion:** Captura textos reales de oferta (`2x1`, `36% OFF`, `Precio Club`) o reporta `Sin promocion`.
+- **EsEquivalente:** Vale `'SI'` exclusivamente si el producto superó con éxito los criterios estrictos de identidad.
 
 ---
 
-## 🚀 Instrucciones de Uso
+## 🧪 Pruebas Automatizadas y Verificación
 
-### Ejecución Directa (Recomendado)
-Hacer doble clic sobre el archivo:
-```
-ejecutar.bat
-```
-El script:
-1. Limpia cualquier puerto huérfano (9222) y cierra Excel para evitar bloqueos.
-2. Ejecuta `node validar_input.js input.csv`. Si algún producto no existe en el catálogo, avisa en pantalla y detiene la ejecución.
-3. Si los productos son válidos, abre **Google Chrome en pantalla completa (F11)** y ejecuta todo el flujo visible demostrable.
+El proyecto cuenta con verificación automatizada en múltiples niveles:
 
-### Administración del Catálogo
-Para consultar los productos existentes en el catálogo local:
+### 1. Batería de 24 Pruebas Unitarias Determinísticas
+Ejecuta la suite completa de 24 pruebas que validan entradas, identidad, jerarquía DOM, PDP, parseo de precios, stock y promociones:
 ```bash
-node catalogo/actualizar_catalogo.js listar
+node tests/test_suite.js
 ```
+*Salida esperada:* `[EXITO TOTAL] Las 24 pruebas pasaron satisfactoriamente.`
 
-Para verificar la integridad del catálogo:
+### 2. Smoke Test de TagUI
+Verifica que TagUI puede lanzar el navegador, interactuar con el DOM y escribir archivos locales:
+```bash
+tagui tests/smoke_tagui.tag -h
+```
+*Salida esperada:* `[OK] Motor TagUI operativo, interactua con DOM y escribe archivos.`
+
+### 3. Verificación de Integridad del Catálogo
+Verifica que no existan duplicados ni inconsistencias en `catalogo/productos.json`:
 ```bash
 node catalogo/actualizar_catalogo.js verificar
 ```
 
 ---
 
-## ⚙️ Requisitos
-- **Google Chrome** instalado.
-- **Node.js** (v14 o superior) instalado y disponible en el `PATH`.
-- **TagUI** instalado y configurado en el `PATH`.
+## 🚀 Instrucciones de Uso en Vivo
+
+### Ejecución Directa (Recomendado)
+Hacer doble clic sobre el archivo:
+```
+ejecutar.bat
+```
+El script realiza los siguientes pasos automatizados:
+1. Limpia procesos huérfanos propios de TagUI (`php.exe`, `tee.exe`) y libera el puerto de depuración 9222 **sin afectar aplicaciones del usuario como Excel**.
+2. Ejecuta `node validar_input.js input.csv`. Si alguna fila es inválida o no coincide con el catálogo, aborta inmediatamente con código 1 sin abrir Chrome ni generar archivos parciales.
+3. Si todas las filas son válidas, abre **Google Chrome en modo VISIBLE y pantalla completa (F11)**.
+4. Para cada tienda (Carrefour, COTO y Día %):
+   - Localiza la tarjeta en el DOM siguiendo la jerarquía estricta: `SKU -> EAN -> URL -> Tokens de Identidad`.
+   - Realiza scroll visual y clic real sobre la tarjeta confirmada.
+   - Valida en la ficha individual (PDP) los 5 criterios obligatorios (Marca, Producto, Cantidad, Unidad, Presentación).
+   - Permanece **4 segundos pedagógicos visibles** en la ficha para demostración ante la cátedra.
+5. Genera `resultados.csv` (15 columnas) y proyecta en la terminal el ranking comparativo por menor precio.
+
+---
+
+## ⚙️ Requisitos del Entorno
+- **Sistema Operativo:** Windows 10 / 11.
+- **Google Chrome** instalado y actualizado.
+- **Node.js** (v14 o superior) disponible en el `PATH`.
+- **TagUI** (v6+) disponible en el `PATH`.
+

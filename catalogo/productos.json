@@ -7,29 +7,29 @@
     "cantidad": 117,
     "unidad": "g",
     "presentacion": "117g",
-    "ean": "7622210819124",
+    "ean": "N/D",
     "justificacion_equivalencia": "",
     "activo": true,
     "supermercados": {
       "Carrefour": {
-        "sku": "126384",
-        "ean": "7622210819124",
-        "url": "https://www.carrefour.com.ar/galletitas-dulce-oreo-rellenas-con-crema-118-g-715949/p",
-        "nombre_original": "Galletitas Rellenas de Vainilla Oreo 117 g",
+        "sku": "N/D",
+        "ean": "N/D",
+        "url": "",
+        "nombre_original": "Galletitas Oreo 117g",
         "termino_busqueda": "Oreo 117g"
       },
       "COTO": {
-        "sku": "00532297",
-        "ean": "7622210819124",
-        "url": "https://www.coto.com.ar/productos/galletitas-oreo-rellenas-con-crema-sabor-original-118g-/_/R-00532297-00532297-200",
-        "nombre_original": "Galletitas OREO Rellenas Con Crema Sabor Original 118g",
+        "sku": "N/D",
+        "ean": "N/D",
+        "url": "",
+        "nombre_original": "Galletitas Oreo 117g",
         "termino_busqueda": "Oreo 117g"
       },
       "Dia": {
-        "sku": "271629",
-        "ean": "7622210819124",
-        "url": "https://diaonline.supermercadosdia.com.ar/galletitas-oreo-rellenas-con-crema-sabor-original-menos-sodio-118-gr-271629/p",
-        "nombre_original": "Galletitas Rellenas Chocolate Oreo 117 Gr.",
+        "sku": "N/D",
+        "ean": "N/D",
+        "url": "",
+        "nombre_original": "Galletitas Oreo 117g",
         "termino_busqueda": "Oreo 117g"
       }
     }

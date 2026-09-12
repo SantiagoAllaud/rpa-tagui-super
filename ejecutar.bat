@@ -22,9 +22,6 @@ taskkill /f /im tee.exe >nul 2>&1
 taskkill /f /im casperjs.exe >nul 2>&1
 taskkill /f /im phantomjs.exe >nul 2>&1
 
-:: 3. Cerrar Excel en caso de que mantenga bloqueado resultados.csv
-taskkill /f /im excel.exe >nul 2>&1
-
 :: 3. Validar disponibilidad de Node.js
 where node >nul 2>&1
 if errorlevel 1 (
