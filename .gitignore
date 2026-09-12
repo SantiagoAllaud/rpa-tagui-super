@@ -5,6 +5,8 @@ rpas ejemplos/
 *.log
 *.tmp
 *_error.png
+*.tag.js
+*.tag.raw
 
 # Entornos virtuales o caché de Python
 __pycache__/
