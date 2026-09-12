@@ -16,4 +16,8 @@ __pycache__/
 *smoke_output.txt
 tests/tests/
 
+# TagUI Sikulix cache
+sikulix/
+
+
 

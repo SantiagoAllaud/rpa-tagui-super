@@ -641,6 +641,180 @@ assert(
 );
 
 // -----------------------------------------------------------------------------
+// [BLOQUE 10] Interacción Visible, Manejo de Obstáculos y Flujo Pedagógico
+// -----------------------------------------------------------------------------
+console.log('\n[BLOQUE 10] Interacción Visible, Manejo de Obstáculos y Flujo Pedagógico');
+
+// Mock simple de DOM para evaluar detectarObstaculosDOM
+function crearMockDocument(elementos) {
+    return {
+        querySelector: function(selector) {
+            for (var i = 0; i < elementos.length; i++) {
+                var el = elementos[i];
+                if (el.matches(selector)) return el;
+            }
+            return null;
+        },
+        querySelectorAll: function(selector) {
+            var res = [];
+            for (var i = 0; i < elementos.length; i++) {
+                var el = elementos[i];
+                if (el.matches(selector)) res.push(el);
+            }
+            return res;
+        }
+    };
+}
+
+function crearMockElement(tag, id, className, text, attributes) {
+    var attrs = attributes || {};
+    var assignedId = id || '';
+    return {
+        tagName: tag.toUpperCase(),
+        id: assignedId,
+        className: className || '',
+        innerText: text || '',
+        value: text || '',
+        offsetParent: {}, // visible
+        offsetWidth: 100,
+        style: {},
+        getAttribute: function(name) { return attrs[name] || (name === 'id' ? assignedId : (name === 'class' ? (className || '') : null)); },
+        setAttribute: function(name, val) { if (name === 'id') assignedId = val; attrs[name] = val; },
+        closest: function(sel) {
+            if (!attrs['parentClass']) return null;
+            var parts = sel.split(',');
+            for (var p = 0; p < parts.length; p++) {
+                var token = parts[p].trim().replace(/[\[\]*=".'#]/g, '').replace('class', '');
+                if (token && attrs['parentClass'].toLowerCase().indexOf(token.toLowerCase()) !== -1) {
+                    return { className: attrs['parentClass'] };
+                }
+            }
+            return null;
+        },
+        matches: function(selector) {
+            if (selector.indexOf(',') !== -1) {
+                var subs = selector.split(',');
+                for (var s = 0; s < subs.length; s++) {
+                    if (this.matches(subs[s].trim())) return true;
+                }
+                return false;
+            }
+            // Tag check if specified before bracket or class
+            var tagMatch = selector.match(/^([a-z0-9]+)/i);
+            if (tagMatch && tagMatch[1].toLowerCase() !== tag.toLowerCase()) return false;
+
+            // Check ID
+            if (selector.indexOf('#') !== -1) {
+                var targetId = selector.replace(/^[a-z0-9]+#/i, '').replace('#', '').split(/[. \[]/)[0];
+                if (assignedId !== targetId && id !== targetId) return false;
+            }
+            // Check classes
+            var classMatches = selector.match(/\.([a-z0-9_-]+)/gi);
+            if (classMatches) {
+                for (var c = 0; c < classMatches.length; c++) {
+                    var cls = classMatches[c].substring(1);
+                    if (!className || className.indexOf(cls) === -1) return false;
+                }
+            }
+            // Check attribute e.g. [aria-label="Cerrar"], [class*="mandatory"]
+            var attrMatches = selector.match(/\[([a-z0-9_-]+)(?:[*^$]?=["']?([^"']*)["']?)?\]/gi);
+            if (attrMatches) {
+                for (var a = 0; a < attrMatches.length; a++) {
+                    var m = attrMatches[a].match(/\[([a-z0-9_-]+)(?:[*^$]?=["']?([^"']*)["']?)?\]/i);
+                    if (!m) continue;
+                    var attrName = m[1];
+                    var attrVal = m[2];
+                    var actualVal = attrs[attrName] || (attrName === 'class' ? className : (attrName === 'id' ? assignedId : ''));
+                    if (attrVal) {
+                        if (!actualVal || actualVal.toLowerCase().indexOf(attrVal.toLowerCase()) === -1) return false;
+                    } else if (!actualVal) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+    };
+}
+
+// TEST 57: Detección de banner de cookies OneTrust y asignación de ID para click real
+const mockDocCookies = crearMockDocument([
+    crearMockElement('button', 'onetrust-accept-btn-handler', 'onetrust-btn', 'Aceptar todas')
+]);
+const resObsCookies = taguiLocal.detectarObstaculosDOM('Carrefour', mockDocCookies);
+assert(
+    resObsCookies.obstaculoDetectado === true &&
+    resObsCookies.tipo === 'COOKIES',
+    '57: detectarObstaculosDOM detecta banner de cookies OneTrust y prepara boton para click real'
+);
+
+// TEST 58: Detección de modal bloqueante con botón de cierre
+const mockDocModal = crearMockDocument([
+    crearMockElement('button', '', 'close', 'X', { 'aria-label': 'Cerrar', 'parentClass': 'modal-dialog' })
+]);
+const resObsModal = taguiLocal.detectarObstaculosDOM('COTO', mockDocModal);
+assert(
+    resObsModal.obstaculoDetectado === true &&
+    resObsModal.tipo === 'MODAL_BLOQUEANTE',
+    '58: detectarObstaculosDOM detecta modal bloqueante con boton de cierre y prepara selector para click real'
+);
+
+// TEST 59: Detección de consentimiento inequívoco en popup
+const mockDocConsent = crearMockDocument([
+    crearMockElement('button', 'btn_entendido', 'btn-info', 'Entendido', { 'parentClass': 'popup-banner' })
+]);
+const resObsConsent = taguiLocal.detectarObstaculosDOM('Día %', mockDocConsent);
+assert(
+    resObsConsent.obstaculoDetectado === true &&
+    resObsConsent.tipo === 'BANNER_CONSENTIMIENTO',
+    '59: detectarObstaculosDOM detecta boton de consentimiento inequívoco ("Entendido") en popup'
+);
+
+// TEST 60: Condición de sucursal obligatoria sin cierre produce REQUIERE_CONFIGURACION_DE_SUCURSAL
+const mockDocSucursal = crearMockDocument([
+    crearMockElement('div', '', 'sucursal-modal mandatory', 'Seleccione sucursal para continuar')
+]);
+const resObsSucursal = taguiLocal.detectarObstaculosDOM('COTO', mockDocSucursal);
+assert(
+    resObsSucursal.estado === 'REQUIERE_CONFIGURACION_DE_SUCURSAL',
+    '60: Selección obligatoria de sucursal sin opción de continuar reporta REQUIERE_CONFIGURACION_DE_SUCURSAL'
+);
+
+// TEST 61: Confirmación de buscador disponible cuando no hay obstáculos
+const mockDocLimpio = crearMockDocument([
+    crearMockElement('input', 'search', 'cio-input', '', { 'placeholder': '¿Qué estás buscando?' })
+]);
+const resObsLimpio = taguiLocal.detectarObstaculosDOM('Carrefour', mockDocLimpio);
+assert(
+    resObsLimpio.obstaculoDetectado === false &&
+    resObsLimpio.buscadorDisponible === true &&
+    resObsLimpio.estado === 'SITIO_LISTO',
+    '61: detectarObstaculosDOM confirma SITIO_LISTO y buscador disponible sin obstáculos'
+);
+
+// TEST 62: Caso Crítico - Solicitud Leche rechaza Bebida Vegetal con resultado ERROR_VALIDACION_FICHA
+const fichaBebidaVegetal = {
+    titulo: 'Bebida Vegetal Almendra La Serenísima Sin Endulzar 1 Lt.',
+    precio: '$ 2.890',
+    url: 'https://diaonline.supermercadosdia.com.ar/bebida-vegetal/p',
+    stock: 'DISPONIBLE',
+    promo: 'Sin promocion'
+};
+const resCheckCritico = taguiLocal.validarIdentidadPDP(lecheSerenisima, fichaBebidaVegetal, catalogo);
+const resFichaCritica = resCheckCritico.valido
+    ? taguiLocal.crearResultadoExitoso('Día %', fichaBebidaVegetal.titulo, fichaBebidaVegetal.precio, fichaBebidaVegetal.url, fichaBebidaVegetal.stock, fichaBebidaVegetal.promo, lecheSerenisima, 'SI')
+    : taguiLocal.crearResultadoError('Día %', 'ERROR_VALIDACION_FICHA', resCheckCritico.resultado + ': ' + resCheckCritico.motivo, lecheSerenisima);
+
+assert(
+    resCheckCritico.valido === false &&
+    resFichaCritica.estado === 'ERROR_VALIDACION_FICHA' &&
+    resFichaCritica.esEquivalente === 'NO' &&
+    resFichaCritica.precio === 'N/D' &&
+    resFichaCritica.precioNumerico === 0,
+    '62: Caso Crítico: Leche solicitada rechaza Bebida Vegetal produciendo ERROR_VALIDACION_FICHA y precio N/D'
+);
+
+// -----------------------------------------------------------------------------
 // RESUMEN FINAL
 // -----------------------------------------------------------------------------
 console.log('\n=====================================================================');
@@ -654,3 +828,4 @@ if (failedTests > 0) {
     console.log('=====================================================================\n');
     process.exit(0);
 }
+

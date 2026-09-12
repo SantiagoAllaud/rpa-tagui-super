@@ -694,6 +694,127 @@ function evaluarTarjetaCapa1(tarjetaTexto, href, dataSku, productoCatalogo, cata
     return { resultado: 'FOUND_EXACT' };
 }
 
+// ==============================================================================
+// 15. MANEJO OBLIGATORIO DE COOKIES, ANUNCIOS, MODALES Y OBSTÁCULOS
+// ==============================================================================
+function detectarObstaculosDOM(supermercado, documentRef) {
+    var doc = documentRef || (typeof document !== 'undefined' ? document : null);
+    if (!doc) return { obstaculoDetectado: false, buscadorDisponible: false };
+
+    function norm(s) {
+        return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    }
+
+    // 1. Detección de banners de cookies inequívocos
+    var cookieSelectors = [
+        '#onetrust-accept-btn-handler',
+        'button#onetrust-accept-btn-handler',
+        '#onetrust-reject-all-handler',
+        'button[class*="cookie-consent"]',
+        'button[id*="cookie-accept"]',
+        'a[class*="cookie-accept"]'
+    ];
+
+    for (var i = 0; i < cookieSelectors.length; i++) {
+        var btn = doc.querySelector(cookieSelectors[i]);
+        if (btn && (btn.offsetParent !== null || btn.offsetWidth > 0)) {
+            btn.setAttribute('id', 'tagui_obstaculo_btn');
+            try { btn.style.outline = '3px solid #ff5252'; } catch(e){}
+            return {
+                obstaculoDetectado: true,
+                tipo: 'COOKIES',
+                descripcion: 'Banner de consentimiento / OneTrust (' + cookieSelectors[i] + ')'
+            };
+        }
+    }
+
+    // 2. Detección de modales visibles y popups bloqueantes (newsletter, ubicación, etc.)
+    var closeSelectors = [
+        'button[aria-label="Cerrar"]',
+        'button[aria-label="cerrar"]',
+        'button[aria-label="Close"]',
+        'button[aria-label="close"]',
+        '.vtex-modal__close-button',
+        '.vtex-modal-layout-0-x-closeButton',
+        'button.close',
+        'button[data-dismiss="modal"]',
+        'div[class*="modal"] button[class*="close"]',
+        'div[class*="popup"] button[class*="close"]',
+        'div[class*="newsletter"] button[class*="close"]',
+        'button[class*="cio-modal-close"]'
+    ];
+
+    for (var j = 0; j < closeSelectors.length; j++) {
+        var closeBtn = doc.querySelector(closeSelectors[j]);
+        if (closeBtn && (closeBtn.offsetParent !== null || closeBtn.offsetWidth > 0)) {
+            closeBtn.setAttribute('id', 'tagui_obstaculo_btn');
+            try { closeBtn.style.outline = '3px solid #ff5252'; } catch(e){}
+            return {
+                obstaculoDetectado: true,
+                tipo: 'MODAL_BLOQUEANTE',
+                descripcion: 'Modal/Popup con boton de cierre (' + closeSelectors[j] + ')'
+            };
+        }
+    }
+
+    // 3. Botones explícitos de aceptación o descarte en modales/avisos
+    var allButtons = doc.querySelectorAll('button, a[role="button"], input[type="button"]');
+    var textosAceptar = ['aceptar todas', 'aceptar cookies', 'estoy de acuerdo', 'entendido', 'continuar', 'ahora no', 'no gracias'];
+    for (var k = 0; k < allButtons.length; k++) {
+        var b = allButtons[k];
+        var txt = norm(b.innerText || b.value || b.getAttribute('aria-label') || '');
+        if (!txt) continue;
+        for (var m = 0; m < textosAceptar.length; m++) {
+            if (txt === textosAceptar[m] && (b.offsetParent !== null || b.offsetWidth > 0)) {
+                var parent = b.closest ? b.closest('[class*="modal"], [class*="popup"], [class*="banner"], [class*="cookie"], [id*="cookie"], [class*="consent"]') : null;
+                if (parent || txt === 'aceptar todas' || txt === 'aceptar cookies') {
+                    b.setAttribute('id', 'tagui_obstaculo_btn');
+                    try { b.style.outline = '3px solid #ff5252'; } catch(e){}
+                    return {
+                        obstaculoDetectado: true,
+                        tipo: 'BANNER_CONSENTIMIENTO',
+                        descripcion: 'Boton de aceptacion/cierre "' + txt + '"'
+                    };
+                }
+            }
+        }
+    }
+
+    // 4. Verificación de selección de sucursal obligatoria sin cierre
+    var sucursalObligatoria = doc.querySelector('[class*="postal-code"][class*="required"], [class*="sucursal-modal"][class*="mandatory"]');
+    if (sucursalObligatoria && (sucursalObligatoria.offsetParent !== null || sucursalObligatoria.offsetWidth > 0)) {
+        return {
+            obstaculoDetectado: false,
+            estado: 'REQUIERE_CONFIGURACION_DE_SUCURSAL',
+            motivo: 'El sitio requiere seleccionar sucursal obligatoriamente y no se define en el entorno'
+        };
+    }
+
+    // 5. Verificación de disponibilidad del buscador
+    var searchSels = [
+        'input[placeholder*="buscar" i]',
+        'input[placeholder*="Buscar" i]',
+        'input[type="search"]',
+        'input[class*="cio-input"]',
+        'input[id*="cio-autocomplete"]',
+        'input[placeholder*="comprar" i]'
+    ];
+    var buscadorEncontrado = false;
+    for (var s = 0; s < searchSels.length; s++) {
+        var inp = doc.querySelector(searchSels[s]);
+        if (inp && (inp.offsetParent !== null || inp.offsetWidth > 0)) {
+            buscadorEncontrado = true;
+            break;
+        }
+    }
+
+    return {
+        obstaculoDetectado: false,
+        buscadorDisponible: buscadorEncontrado,
+        estado: 'SITIO_LISTO'
+    };
+}
+
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         getFechaActual: getFechaActual,
@@ -710,7 +831,9 @@ if (typeof module !== 'undefined' && module.exports) {
         determinarPromocion: determinarPromocion,
         compararYOrdenar: compararYOrdenar,
         validarIdentidadPDP: validarIdentidadPDP,
-        evaluarTarjetaCapa1: evaluarTarjetaCapa1
+        evaluarTarjetaCapa1: evaluarTarjetaCapa1,
+        detectarObstaculosDOM: detectarObstaculosDOM
     };
 }
+
 

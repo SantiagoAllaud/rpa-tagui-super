@@ -5,26 +5,24 @@ Automatización robótica de procesos (RPA) desarrollada en **TagUI + JavaScript
 
 ---
 
-## 📌 Descripción del Proyecto y Nueva Arquitectura
+## 📌 Descripción del Proyecto y Arquitectura Determinística Visible
 
-El sistema elimina la necesidad de que el robot intente interpretar o adivinar en tiempo real si un producto corresponde al solicitado. En su lugar, el flujo opera de manera **determinística**:
+El sistema elimina la necesidad de que el robot intente interpretar o adivinar en tiempo real si un producto corresponde al solicitado. En su lugar, el flujo opera de manera **determinística, visible y pedagógica para la cátedra**:
 
-1. **Catálogo Local Normalizado (`catalogo/productos.json`)**: Almacena los productos con su identificador interno (`id_producto`), producto, marca, cantidad, unidad y las referencias directas (URLs/términos exactos) para cada supermercado.
-2. **Entrada Estricta del Usuario (`input.csv`)**: El usuario debe especificar obligatoriamente los 4 campos del producto:
-   - **Producto** (ej. `Galletitas`)
-   - **Marca** (ej. `Oreo`)
-   - **Cantidad** (ej. `117`)
-   - **Unidad** (ej. `g`)
-   *(No se admiten búsquedas genéricas o incompletas)*.
+1. **Catálogo Local Normalizado (`catalogo/productos.json`)**: Almacena los productos con su identificador interno (`id_producto`), producto, marca, cantidad, unidad, atributos de identidad (`tipo`, `variante`, `incompatibles`) y las referencias directas para cada tienda.
+2. **Entrada Estricta o Menú Interactivo**:
+   - Selección guiada desde la terminal mediante `menu_interactivo.js` sobre productos activos del catálogo.
+   - O entrada manual mediante `input.csv` con las 4 columnas obligatorias: `producto`, `marca`, `cantidad`, `unidad`.
 3. **Validación Previa Inmediata (`validar_input.js`)**: Antes de abrir el navegador, el sistema valida la combinación contra el catálogo:
-   - Si es válido: Genera `input_tagui.csv` con las referencias resueltas para cada tienda y da paso al RPA.
+   - Si es válido: Genera `input_tagui.csv` con las referencias resueltas y da paso al RPA.
    - Si es inválido o no existe: Emite un error explícito en consola y **aborta la ejecución sin iniciar TagUI**.
-4. **Ejecución Visual en Vivo de TagUI (`scraper_supermercados.tag`)**:
-   - Google Chrome abre visible y se maximiza a pantalla completa (`F11`).
-   - Navega a Carrefour, COTO y Día % de forma visible.
-   - Realiza la búsqueda, ordenamiento por menor precio y scroll pedagógico en 3 oleadas.
-   - Hace clic real en la tarjeta del producto, ingresa a la ficha individual y permanece **4 segundos visibles**.
-   - Extrae en tiempo real: **Precio actual**, **Stock** (`DISPONIBLE` / `AGOTADO`) y **Promociones** (ej. `"2x1"`, `"70% en la 2da unidad"`).
+4. **Ejecución 100% Visible y Pedagógica en Google Chrome (`scraper_supermercados.tag`)**:
+   - **Barra de direcciones REAL**: Enfoque real con `Ctrl + L`, escritura letra por letra de la URL en la barra real de Chrome y `Enter` real mediante `scripts/escribir_url_chrome.vbs`.
+   - **Manejo sistemático de obstáculos (`prepararSitio`)**: Detección y cierre mediante clicks reales de TagUI para banners de cookies (OneTrust), popups promocionales, avisos de ubicación y boletines antes de la búsqueda.
+   - **Buscador interactivo real**: Click real en el buscador, escritura visible del término en el input con pausas pedagógicas, y ejecución de la búsqueda mediante `Enter` o click en el botón de búsqueda.
+   - **Scroll progresivo y visible**: Exploración escalonada del catálogo (350px -> 600px -> 600px con esperas de 1.5s).
+   - **Detección determinística y resaltado visual**: Filtrado Capa 1, resaltado de la tarjeta con borde verde luminoso (`#00E676`) y centrado suave (`scrollIntoView`), seguido de un **click real de TagUI** en la tarjeta.
+   - **Permanencia pedagógica en PDP (4s)** y validación comercial estricta Capa 2 (Reglas 1-16): Extracción de precio actual, stock (`DISPONIBLE` / `AGOTADO`) y promociones, o rechazo determinístico (`ERROR_VALIDACION_FICHA`) ante discrepancias (ej. rechazo de Bebida Vegetal cuando se solicita Leche).
 5. **Persistencia y Cuadro Comparativo (`resultados.csv`)**:
    - Guarda los resultados en un archivo CSV de **15 columnas** y genera el ranking en consola indicando cuál es el más barato y la diferencia contra el más caro.
 
@@ -35,7 +33,7 @@ El sistema elimina la necesidad de que el robot intente interpretar o adivinar e
 ```text
                CATÁLOGO LOCAL (catalogo/productos.json)
                                 ↓
-                 USUARIO DEFINE EN input.csv:
+                 USUARIO DEFINE O ELIGE PRODUCTO:
                Producto + Marca + Cantidad + Unidad
                                 ↓
                     EJECUTAR (ejecutar.bat)
@@ -48,15 +46,22 @@ El sistema elimina la necesidad de que el robot intente interpretar o adivinar e
                     ↓                ↓
              Muestra ERROR     Producto identificado
             y NO inicia TagUI        ↓
-                               INICIA TAGUI (Chrome visible F11)
+                               INICIA TAGUI (Chrome visible)
                                      ↓
-                               Carrefour / COTO / Día %
-                               (Búsqueda directa + scroll + 
-                                click en ficha + 4s visuales)
+                               [1] Carrefour / [2] COTO / [3] Día %
+                               • Barra de direcciones real (Ctrl+L)
+                               • Escribe URL real + Enter
+                               • Cierra cookies/modales con clicks reales
+                               • Escribe término en buscador real
+                               • Scroll visible explorando catálogo
+                               • Resalta tarjeta candidata (#00E676)
+                               • Click real en tarjeta
+                               • Permanece 4s en ficha (PDP)
+                               • Valida identidad determinística (Capa 2)
                                      ↓
                                Obtiene Precio / Stock / Promo
                                      ↓
-                           RANKING Y RESULTADOS CSV
+                           RANKING Y RESULTADOS CSV (15 col)
 ```
 
 ---
@@ -70,9 +75,12 @@ rpa tagui super/
 │   ├── productos.json           # Catálogo local de productos normalizados y referencias de tiendas
 │   └── actualizar_catalogo.js   # Script administrativo para listar, verificar o actualizar el catálogo
 │
+├── scripts/
+│   └── escribir_url_chrome.vbs  # Automatización nativa de barra de direcciones de Chrome (Ctrl+L, URL real, Enter)
+│
 ├── tests/
-│   ├── test_suite.js            # Batería completa de 33 pruebas unitarias determinísticas (Tests 1-24 + 31-39)
-│   └── smoke_tagui.tag          # Smoke test para verificar operatividad del motor TagUI
+│   ├── test_suite.js            # Batería completa de 56 pruebas automatizadas (Tests 1-24, 31-39, 40-62)
+│   └── smoke_tagui.tag          # Smoke test en vivo para verificar operatividad de TagUI
 │
 ├── menu_interactivo.js          # Menú interactivo de selección determinística desde terminal
 ├── validar_input.js             # Validador estricto previo a la ejecución de TagUI
@@ -80,8 +88,9 @@ rpa tagui super/
 ├── input_tagui.csv              # Archivo intermedio generado con referencias resueltas para TagUI
 ├── resultados.csv               # Archivo consolidado de salida con 15 columnas
 ├── scraper_supermercados.tag    # Script principal de TagUI (flujo visual en Chrome)
-├── tagui_local.js               # Funciones auxiliares JS (precios, stock, promociones, ranking)
+├── tagui_local.js               # Funciones auxiliares JS (precios, stock, promociones, obstáculos, ranking)
 ├── ejecutar.bat                 # Lanzador interactivo por doble clic en Windows
+├── interfaz.bat                 # Acceso directo para ejecución del RPA
 └── README.md                    # Documentación del proyecto
 ```
 
@@ -166,12 +175,12 @@ Todo atributo evaluado durante la validación posee exclusivamente uno de estos 
 
 El proyecto cuenta con verificación automatizada integral en múltiples capas:
 
-### 1. Batería de 50 Pruebas Unitarias Determinísticas (Tests 1-24, 31-39 y 40-56)
-Ejecuta la suite completa de 50 pruebas unitarias en Node.js que verifican campos de entrada, separación de productos, jerarquía DOM, PDP, parseo de precios, stock, promociones, menú interactivo y las 16 reglas de la política de identidad:
+### 1. Batería de 56 Pruebas Unitarias Determinísticas (Tests 1-24, 31-39, 40-56 y 57-62)
+Ejecuta la suite completa de 56 pruebas unitarias en Node.js que verifican campos de entrada, separación de productos, jerarquía DOM, PDP, parseo de precios, stock, promociones, menú interactivo, las 16 reglas de la política de identidad, y el flujo visual pedagógico (Omnibox real, detección de obstáculos y scroll progresivo):
 ```bash
 node tests/test_suite.js
 ```
-*Salida esperada:* `[EXITO TOTAL] Las 50 pruebas pasaron satisfactoriamente.`
+*Salida esperada:* `[EXITO TOTAL] Las 56 pruebas pasaron satisfactoriamente.`
 
 ### 2. Smoke Test de TagUI en Modo Visible
 Verifica que el motor TagUI opera correctamente interactuando con Chrome a pantalla completa, manipulando el DOM y persistiendo archivos locales:

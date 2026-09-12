@@ -15,9 +15,7 @@ if iteration equals to 1
     dump "Nombre","Precio","Supermercado","URL","Fecha","Estado","ProductoSolicitado","Marca","Cantidad","Unidad","Presentacion","PrecioNumerico","Stock","Promocion","EsEquivalente" to resultados.csv
     js catalogoCompleto = []; try { var fsCasper = require('fs'); if (fsCasper.exists('catalogo/productos.json')) { catalogoCompleto = JSON.parse(fsCasper.read('catalogo/productos.json')); } } catch(e){}
 
-    echo -> Maximizando ventana de Google Chrome a pantalla completa...
-    wait 2
-    keyboard [f11]
+    echo -> Inicializando ventana de Google Chrome para demostracion pedagogica...
     wait 2
 
 // 2. PREPARACIÓN DE LA SOLICITUD DETERMINÍSTICA
@@ -45,31 +43,47 @@ echo [1/3] CARREFOUR ARGENTINA - `producto` `marca` `presentacion`
 echo ------------------------------------------------------------
 carrefourSel = null
 
-echo -> Abriendo portal de Carrefour Argentina...
+echo -> Enfocando barra de direcciones real de Google Chrome (Ctrl + L)...
+echo -> Escribiendo URL real letra por letra: https://www.carrefour.com.ar/
+run cscript //nologo scripts/escribir_url_chrome.vbs https://www.carrefour.com.ar/
 https://www.carrefour.com.ar/
-wait 3
-echo -> Limpiando avisos, cookies y modales...
-dom (function(){ var sels = ['button[aria-label="Cerrar"]', '#onetrust-accept-btn-handler', 'button.close', '[class*="modal"] button']; for (var i=0; i<sels.length; i++) { var el = document.querySelector(sels[i]); if(el) try{el.click();}catch(e){} } })()
+wait 4
+
+echo -> Ejecutando prepararSitio("Carrefour"): verificando cookies y modales...
+dom return JSON.stringify(detectarObstaculosDOM('Carrefour'))
+js obsCarrefour = JSON.parse(dom_result || '{"obstaculoDetectado":false}')
+if obsCarrefour.obstaculoDetectado equals to true
+    echo -> Obstaculo detectado: `obsCarrefour.descripcion`. Realizando click real con TagUI...
+    wait 1
+    click #tagui_obstaculo_btn
+    wait 2
+    echo -> Obstaculo cerrado. Verificando disponibilidad del buscador...
+    dom return JSON.stringify(detectarObstaculosDOM('Carrefour'))
 
 xpCarrefourInput = '//input[contains(@placeholder, "buscar") or contains(@placeholder, "Buscar") or @type="search"]'
 if (present(xpCarrefourInput))
-    echo -> Buscador detectado. Escribiendo termino: `carrefour_query`
+    echo -> Buscador interactivo detectado en Carrefour. Haciendo click real...
     click `xpCarrefourInput`
     wait 1
+    echo -> Escribiendo termino de busqueda en el input: `carrefour_query`
     type `xpCarrefourInput` as [clear]`carrefour_query`
     wait 2
-    echo -> Ejecutando busqueda visible en Carrefour...
+    echo -> Presionando ENTER para ejecutar busqueda real en Carrefour...
     type `xpCarrefourInput` as [enter]
     wait 4
 else
-    echo -> Buscador interactivo no visible, abriendo catalogo...
+    echo -> Buscador interactivo no visible, abriendo catalogo de busqueda...
     targetCarrefourSearch = 'https://www.carrefour.com.ar/' + encodeSearchTerm(carrefour_query) + '?_q=' + encodeSearchTerm(carrefour_query)
     targetCarrefourSearch = targetCarrefourSearch.replace(/^https?:\/\//, '')
     https://`targetCarrefourSearch`
     wait 4
 
-// Limpieza de modales
-dom (function(){ var sels = ['button[aria-label="Cerrar"]', '#onetrust-accept-btn-handler', 'button.close', '[class*="modal"] button']; for (var i=0; i<sels.length; i++) { var el = document.querySelector(sels[i]); if(el) try{el.click();}catch(e){} } })()
+// Verificación post-búsqueda de modales
+dom return JSON.stringify(detectarObstaculosDOM('Carrefour'))
+js obsCarrefour2 = JSON.parse(dom_result || '{"obstaculoDetectado":false}')
+if obsCarrefour2.obstaculoDetectado equals to true
+    click #tagui_obstaculo_btn
+    wait 1
 
 // Recorrido y scroll visual del catálogo
 echo -> Recorriendo y scrolleando el catalogo visualmente...
@@ -137,17 +151,29 @@ echo [2/3] COTO DIGITAL - `producto` `marca` `presentacion`
 echo ------------------------------------------------------------
 cotoSel = null
 
-echo -> Abriendo portal de COTO Digital...
+echo -> Enfocando barra de direcciones real de Google Chrome (Ctrl + L)...
+echo -> Escribiendo URL real letra por letra: https://www.coto.com.ar/
+run cscript //nologo scripts/escribir_url_chrome.vbs https://www.coto.com.ar/
 https://www.coto.com.ar/
-wait 3
-echo -> Limpiando avisos y modales...
-dom (function(){ var sels = ['button[aria-label="Cerrar"]', 'button.close', '[class*="modal"] button']; for (var i=0; i<sels.length; i++) { var el = document.querySelector(sels[i]); if(el) try{el.click();}catch(e){} } })()
+wait 4
+
+echo -> Ejecutando prepararSitio("COTO"): verificando cookies y modales...
+dom return JSON.stringify(detectarObstaculosDOM('COTO'))
+js obsCoto = JSON.parse(dom_result || '{"obstaculoDetectado":false}')
+if obsCoto.obstaculoDetectado equals to true
+    echo -> Obstaculo detectado: `obsCoto.descripcion`. Realizando click real con TagUI...
+    wait 1
+    click #tagui_obstaculo_btn
+    wait 2
+    echo -> Obstaculo cerrado. Verificando disponibilidad del buscador...
+    dom return JSON.stringify(detectarObstaculosDOM('COTO'))
 
 xpCotoInput = '//input[contains(@class,"cio-input") or contains(@id,"cio-autocomplete")] | //input[contains(@placeholder, "comprar") or contains(@placeholder, "buscar")]'
 if (present(xpCotoInput))
-    echo -> Buscador de COTO detectado. Escribiendo termino: `coto_query`
+    echo -> Buscador de COTO detectado. Haciendo click real...
     click `xpCotoInput`
     wait 1
+    echo -> Escribiendo termino de busqueda en el input: `coto_query`
     type `xpCotoInput` as [clear]`coto_query`
     wait 2
     
@@ -156,45 +182,51 @@ if (present(xpCotoInput))
         echo -> Haciendo click en el boton de busqueda de COTO...
         click `xpCotoBtn`
     else
+        echo -> Presionando ENTER para ejecutar la busqueda en COTO...
         type `xpCotoInput` as [enter]
     wait 4
 else
-    echo -> Buscador interactivo de COTO no visible, abriendo catalogo...
+    echo -> Buscador interactivo de COTO no visible, abriendo catalogo de busqueda...
     targetCotoSearch = 'https://www.coto.com.ar/buscar?q=' + encodeSearchTerm(coto_query)
     targetCotoSearch = targetCotoSearch.replace(/^https?:\/\//, '')
     https://`targetCotoSearch`
     wait 4
 
-// Limpieza de modales
-dom (function(){ var sels = ['button[aria-label="Cerrar"]', 'button.close', '[class*="modal"] button']; for (var i=0; i<sels.length; i++) { var el = document.querySelector(sels[i]); if(el) try{el.click();}catch(e){} } })()
+// Verificación post-búsqueda de modales en COTO
+dom return JSON.stringify(detectarObstaculosDOM('COTO'))
+js obsCoto2 = JSON.parse(dom_result || '{"obstaculoDetectado":false}')
+if obsCoto2.obstaculoDetectado equals to true
+    click #tagui_obstaculo_btn
+    wait 1
 
 // Recorrido y scroll visual del catálogo de COTO
-echo -> Recorriendo y scrolleando el catalogo de COTO...
-dom window.scrollTo(0, 300);
+echo -> Recorriendo y scrolleando el catalogo de COTO visualmente...
+dom window.scrollTo({ top: 350, behavior: 'smooth' });
 wait 2
-echo -> Scrolleando catalogo hacia abajo (bloque 1)...
-dom window.scrollBy(0, 600);
+echo -> Explorando productos hacia abajo (bloque 1)...
+dom window.scrollBy({ top: 600, behavior: 'smooth' });
 wait 2
-echo -> Scrolleando catalogo hacia abajo (bloque 2)...
-dom window.scrollBy(0, 600);
+echo -> Explorando productos hacia abajo (bloque 2)...
+dom window.scrollBy({ top: 600, behavior: 'smooth' });
 wait 2
-echo -> Reubicando vista en los productos...
-dom window.scrollTo(0, 350);
+echo -> Reubicando vista hacia la seleccion...
+dom window.scrollTo({ top: 350, behavior: 'smooth' });
 wait 1
 
 // LOCALIZAR EN EL DOM LA TARJETA QUE REALMENTE CORRESPONDE A LA JERARQUÍA (SKU -> EAN -> URL -> TOKENS) EN COTO
 echo -> Localizando en el DOM de COTO: `marca` (`producto` `presentacion`)...
-dom return (function(sku, ean, refUrl, brand, prod, cant, unidad, incStr) { function norm(s){ return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); } var cards = document.querySelectorAll('div.product-card, div:has(> product-add-show-remove), article, div[class*="card"]'); var bNorm = norm(brand); var pNorm = norm(prod); var cNorm = parseFloat(String(cant || '').replace(',', '.')); var uNorm = norm(unidad); var sNorm = (sku && sku !== 'N/D') ? norm(sku) : ''; var eNorm = (ean && ean !== 'N/D') ? norm(ean) : ''; var urlNorm = (refUrl && refUrl.length > 5) ? norm(refUrl) : ''; var incs = (incStr && incStr !== 'N/D') ? incStr.split('|') : []; var regex = /\b(\d+(?:[.,]\d+)?)\s*(kg|kilos?|kilogramos?|g|gr|grs|gramos?|ml|cc|cm3|l|lt|lts|litros?)\b/i; var candidate = null; for (var i = 0; i < cards.length; i++) { var c = cards[i]; var link = c.querySelector('a[href*="/productos/"]') || c.querySelector('a'); var href = link ? norm(link.href || '') : ''; var text = norm(c.innerText); var dataSku = norm(c.getAttribute('data-sku') || c.getAttribute('data-id') || c.getAttribute('id') || ''); var tieneInc = false; for (var j = 0; j < incs.length; j++) { var incNorm = norm(incs[j]); if (incNorm && text.indexOf(incNorm) !== -1) { tieneInc = true; break; } } if (tieneInc) continue; if (sNorm && (dataSku === sNorm || href.indexOf(sNorm) !== -1 || text.indexOf(sNorm) !== -1)) { candidate = { card: c, link: link }; break; } if (eNorm && (text.indexOf(eNorm) !== -1 || href.indexOf(eNorm) !== -1)) { candidate = { card: c, link: link }; break; } if (urlNorm && href && (href.indexOf(urlNorm) !== -1 || urlNorm.indexOf(href) !== -1)) { candidate = { card: c, link: link }; break; } if (bNorm && text.indexOf(bNorm) !== -1) { var match = text.match(regex); var cardCant = match ? parseFloat(match[1].replace(',', '.')) : null; var cardUnit = match ? norm(match[2]) : ''; if (['kg', 'kilo', 'kilos', 'kilogramo', 'kilogramos'].indexOf(cardUnit) !== -1) cardUnit = 'kg'; else if (['g', 'gr', 'grs', 'gramo', 'gramos'].indexOf(cardUnit) !== -1) cardUnit = 'g'; else if (['ml', 'cc', 'cm3'].indexOf(cardUnit) !== -1) cardUnit = 'ml'; else if (['l', 'lt', 'lts', 'litro', 'litros'].indexOf(cardUnit) !== -1) cardUnit = 'l'; var presCompact = norm(String(cant || '')) + (uNorm ? uNorm.toLowerCase() : ''); var cantCoincide = (cardCant !== null && Math.abs(cardCant - cNorm) < 0.001 && (!cardUnit || cardUnit === uNorm)) || (text.indexOf(presCompact) !== -1); if (cantCoincide) { candidate = { card: c, link: link }; break; } } } if (candidate && candidate.card) { try { candidate.card.style.outline = '4px solid #00E676'; candidate.card.style.boxShadow = '0 0 15px #00E676'; candidate.card.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(e){} var targetEl = candidate.link || candidate.card; targetEl.setAttribute('id', 'tagui_target_coto'); return 'FOUND_EXACT'; } return 'NOT_FOUND'; })('`coto_sku`', '`ean`', '`coto_url`', '`marca`', '`producto`', '`cantidad`', '`unidad`', '`atributos_incompatibles`')
+dom return (function(sku, ean, refUrl, brand, prod, cant, unidad, incStr) { function norm(s){ return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); } var cards = document.querySelectorAll('div.product-card, div:has(> product-add-show-remove), article, div[class*="card"]'); var bNorm = norm(brand); var pNorm = norm(prod); var cNorm = parseFloat(String(cant || '').replace(',', '.')); var uNorm = norm(unidad); var sNorm = (sku && sku !== 'N/D') ? norm(sku) : ''; var eNorm = (ean && ean !== 'N/D') ? norm(ean) : ''; var urlNorm = (refUrl && refUrl.length > 5) ? norm(refUrl) : ''; var incs = (incStr && incStr !== 'N/D') ? incStr.split('|') : []; var regex = /\b(\d+(?:[.,]\d+)?)\s*(kg|kilos?|kilogramos?|g|gr|grs|gramos?|ml|cc|cm3|l|lt|lts|litros?)\b/i; var candidate = null; for (var i = 0; i < cards.length; i++) { var c = cards[i]; var link = c.querySelector('a[href*="/productos/"]') || c.querySelector('a'); var href = link ? norm(link.href || '') : ''; var text = norm(c.innerText); var dataSku = norm(c.getAttribute('data-sku') || c.getAttribute('data-id') || c.getAttribute('id') || ''); var tieneInc = false; for (var j = 0; j < incs.length; j++) { var incNorm = norm(incs[j]); if (incNorm && text.indexOf(incNorm) !== -1) { tieneInc = true; break; } } if (tieneInc) continue; if (sNorm && (dataSku === sNorm || href.indexOf(sNorm) !== -1 || text.indexOf(sNorm) !== -1)) { candidate = { card: c, link: link }; break; } if (eNorm && (text.indexOf(eNorm) !== -1 || href.indexOf(eNorm) !== -1)) { candidate = { card: c, link: link }; break; } if (urlNorm && href && (href.indexOf(urlNorm) !== -1 || urlNorm.indexOf(href) !== -1)) { candidate = { card: c, link: link }; break; } if (bNorm && text.indexOf(bNorm) !== -1) { var match = text.match(regex); var cardCant = match ? parseFloat(match[1].replace(',', '.')) : null; var cardUnit = match ? norm(match[2]) : ''; if (['kg', 'kilo', 'kilos', 'kilogramo', 'kilogramos'].indexOf(cardUnit) !== -1) cardUnit = 'kg'; else if (['g', 'gr', 'grs', 'gramo', 'gramos'].indexOf(cardUnit) !== -1) cardUnit = 'g'; else if (['ml', 'cc', 'cm3'].indexOf(cardUnit) !== -1) cardUnit = 'ml'; else if (['l', 'lt', 'lts', 'litro', 'litros'].indexOf(cardUnit) !== -1) cardUnit = 'l'; var presCompact = norm(String(cant || '')) + (uNorm ? uNorm.toLowerCase() : ''); var cantCoincide = (cardCant !== null && Math.abs(cardCant - cNorm) < 0.001 && (!cardUnit || cardUnit === uNorm)) || (text.indexOf(presCompact) !== -1); if (cantCoincide) { candidate = { card: c, link: link }; break; } } } if (candidate && candidate.card) { try { candidate.card.style.outline = '4px solid #00E676'; candidate.card.style.boxShadow = '0 0 20px #00E676'; candidate.card.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(e){} var targetEl = candidate.link || candidate.card; targetEl.setAttribute('id', 'tagui_target_coto'); return 'FOUND_EXACT'; } return 'NOT_FOUND'; })('`coto_sku`', '`ean`', '`coto_url`', '`marca`', '`producto`', '`cantidad`', '`unidad`', '`atributos_incompatibles`')
 
 if dom_result equals to 'FOUND_EXACT'
-    echo -> Producto exacto localizado en COTO. Haciendo click real...
-    wait 1
+    echo -> Tarjeta candidata resaltada en pantalla con borde luminoso.
+    echo -> Realizando click real con TagUI en la tarjeta de COTO...
+    wait 2
     click #tagui_target_coto
     wait 4
 else
     echo -> No se localizo tarjeta con marca `marca` y presentacion `presentacion` en el listado de COTO.
     if (coto_url != '')
-        echo -> Accediendo a la referencia de catalogo para verificar ficha: `coto_url`
+        echo -> Accediendo a la referencia auxiliar de catalogo: `coto_url`
         targetCotoUrl = coto_url.replace(/^https?:\/\//, '')
         https://`targetCotoUrl`
         wait 4
@@ -203,6 +235,8 @@ js hayNavegacionCoto = (dom_result === 'FOUND_EXACT' || (typeof coto_url !== 'un
 
 if hayNavegacionCoto equals to true
     // VALIDACIÓN ESTRICTA DE LA FICHA INDIVIDUAL (CAPA 2 - POLÍTICA DE IDENTIDAD REGLAS 1-16) EN COTO
+    echo -> Navegacion a ficha completada. Permaneciendo visible 4 segundos...
+    wait 4
     echo -> Extrayendo datos de la ficha individual en COTO...
     dom return (function() { var titleEl = document.querySelector('h1, [class*="product-title"], [class*="desc_prod"]'); var title = titleEl ? titleEl.innerText.trim() : ''; var specsEl = document.querySelector('[class*="specification"], [class*="features"], [class*="description"], [class*="breadcrumb"], [class*="category"]'); var specs = specsEl ? specsEl.innerText.trim() : ''; var price = document.querySelector('[class*="atg_store_newPrice"], [class*="sellingPrice"], [class*="price"], [class*="precio"]'); var priceText = price ? price.innerText.trim() : 'N/D'; var stockBtn = document.querySelector('button[class*="comprar"], button[class*="add-to-cart"], input[value*="Comprar"]'); var agotadoTxt = document.body.innerText.match(/agotado|sin stock|no disponible/i); var hayBotonActivo = (stockBtn && !stockBtn.disabled && !stockBtn.classList.contains('disabled')); var hayBotonDeshabilitado = (stockBtn && (stockBtn.disabled || stockBtn.classList.contains('disabled'))); var stock = 'NO_VERIFICADO'; if (!!agotadoTxt || hayBotonDeshabilitado) stock = 'AGOTADO'; else if (hayBotonActivo) stock = 'DISPONIBLE'; var promoBadge = document.querySelector('[class*="descuento"], [class*="promo"], [class*="banner_oferta"]'); var promo = promoBadge ? promoBadge.innerText.trim() : 'Sin promocion'; return JSON.stringify({ titulo: title, cuerpo: specs, precio: priceText, stock: stock, promo: promo, url: window.location.href }); })()
 
@@ -214,7 +248,7 @@ if hayNavegacionCoto equals to true
         js cotoSel = crearResultadoExitoso("COTO", pdpDataCoto.titulo, pdpDataCoto.precio, pdpDataCoto.url, pdpDataCoto.stock, pdpDataCoto.promo, solicitudObj, 'SI')
         echo -> [VERIFICADO OK - `cotoCheck.resultado`] `cotoSel.nombre` (`cotoSel.precio`)
         echo -> Stock: `cotoSel.stock` | Promocion: `cotoSel.promocion`
-        echo -> Permanencia visual pedagogica de 4 segundos en ficha...
+        echo -> Permanencia pedagogica de 4 segundos en ficha verificada...
         wait 4
     else
         echo -> [RECHAZADO COTO - `cotoCheck.resultado`] `cotoCheck.motivo`
@@ -234,17 +268,29 @@ echo [3/3] SUPERMERCADOS DIA % - `producto` `marca` `presentacion`
 echo ------------------------------------------------------------
 diaSel = null
 
-echo -> Abriendo portal de Supermercados Día %...
+echo -> Enfocando barra de direcciones real de Google Chrome (Ctrl + L)...
+echo -> Escribiendo URL real letra por letra: https://diaonline.supermercadosdia.com.ar/
+run cscript //nologo scripts/escribir_url_chrome.vbs https://diaonline.supermercadosdia.com.ar/
 https://diaonline.supermercadosdia.com.ar/
-wait 3
-echo -> Limpiando avisos y modales...
-dom (function(){ var sels = ['button[aria-label="Cerrar"]', 'button.close', '[class*="modal"] button']; for (var i=0; i<sels.length; i++) { var el = document.querySelector(sels[i]); if(el) try{el.click();}catch(e){} } })()
+wait 4
+
+echo -> Ejecutando prepararSitio("Dia %"): verificando cookies y modales...
+dom return JSON.stringify(detectarObstaculosDOM('Día %'))
+js obsDia = JSON.parse(dom_result || '{"obstaculoDetectado":false}')
+if obsDia.obstaculoDetectado equals to true
+    echo -> Obstaculo detectado: `obsDia.descripcion`. Realizando click real con TagUI...
+    wait 1
+    click #tagui_obstaculo_btn
+    wait 2
+    echo -> Obstaculo cerrado. Verificando disponibilidad del buscador...
+    dom return JSON.stringify(detectarObstaculosDOM('Día %'))
 
 xpDiaInput = '//input[contains(@placeholder, "buscar") or contains(@placeholder, "Buscar")]'
 if (present(xpDiaInput))
-    echo -> Buscador de Día % detectado. Escribiendo termino: `dia_query`
+    echo -> Buscador de Día % detectado. Haciendo click real...
     click `xpDiaInput`
     wait 1
+    echo -> Escribiendo termino de busqueda en el input: `dia_query`
     type `xpDiaInput` as [clear]`dia_query`
     wait 2
     
@@ -254,45 +300,51 @@ if (present(xpDiaInput))
         click `xpDiaVerTodos`
         wait 4
     else
+        echo -> Presionando ENTER para ejecutar busqueda en Día %...
         type `xpDiaInput` as [enter]
         wait 4
 else
-    echo -> Buscador interactivo de Día % no visible, abriendo catalogo...
+    echo -> Buscador interactivo de Día % no visible, abriendo catalogo de busqueda...
     targetDiaSearch = 'https://diaonline.supermercadosdia.com.ar/' + encodeSearchTerm(dia_query) + '?_q=' + encodeSearchTerm(dia_query)
     targetDiaSearch = targetDiaSearch.replace(/^https?:\/\//, '')
     https://`targetDiaSearch`
     wait 4
 
-// Limpieza de modales
-dom (function(){ var sels = ['button[aria-label="Cerrar"]', 'button.close', '[class*="modal"] button']; for (var i=0; i<sels.length; i++) { var el = document.querySelector(sels[i]); if(el) try{el.click();}catch(e){} } })()
+// Verificación post-búsqueda de modales en Día %
+dom return JSON.stringify(detectarObstaculosDOM('Día %'))
+js obsDia2 = JSON.parse(dom_result || '{"obstaculoDetectado":false}')
+if obsDia2.obstaculoDetectado equals to true
+    click #tagui_obstaculo_btn
+    wait 1
 
 // Recorrido y scroll visual del catálogo de Día %
-echo -> Recorriendo y scrolleando el catalogo de Día %...
-dom window.scrollTo(0, 300);
+echo -> Recorriendo y scrolleando el catalogo de Día % visualmente...
+dom window.scrollTo({ top: 350, behavior: 'smooth' });
 wait 2
-echo -> Scrolleando catalogo hacia abajo (bloque 1)...
-dom window.scrollBy(0, 600);
+echo -> Explorando productos hacia abajo (bloque 1)...
+dom window.scrollBy({ top: 600, behavior: 'smooth' });
 wait 2
-echo -> Scrolleando catalogo hacia abajo (bloque 2)...
-dom window.scrollBy(0, 600);
+echo -> Explorando productos hacia abajo (bloque 2)...
+dom window.scrollBy({ top: 600, behavior: 'smooth' });
 wait 2
-echo -> Reubicando vista en los productos...
-dom window.scrollTo(0, 350);
+echo -> Reubicando vista hacia la seleccion...
+dom window.scrollTo({ top: 350, behavior: 'smooth' });
 wait 1
 
 // LOCALIZAR EN EL DOM LA TARJETA QUE REALMENTE CORRESPONDE A LA JERARQUÍA (SKU -> EAN -> URL -> TOKENS) EN DÍA %
 echo -> Localizando en el DOM de Día %: `marca` (`producto` `presentacion`)...
-dom return (function(sku, ean, refUrl, brand, prod, cant, unidad, incStr) { function norm(s){ return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); } var cards = document.querySelectorAll('section article, div[class*="product-summary"], article[class*="product"]'); var bNorm = norm(brand); var pNorm = norm(prod); var cNorm = parseFloat(String(cant || '').replace(',', '.')); var uNorm = norm(unidad); var sNorm = (sku && sku !== 'N/D') ? norm(sku) : ''; var eNorm = (ean && ean !== 'N/D') ? norm(ean) : ''; var urlNorm = (refUrl && refUrl.length > 5) ? norm(refUrl) : ''; var incs = (incStr && incStr !== 'N/D') ? incStr.split('|') : []; var regex = /\b(\d+(?:[.,]\d+)?)\s*(kg|kilos?|kilogramos?|g|gr|grs|gramos?|ml|cc|cm3|l|lt|lts|litros?)\b/i; var candidate = null; for (var i = 0; i < cards.length; i++) { var c = cards[i]; var link = c.querySelector('a[href*="/p"]') || c.querySelector('a'); var href = link ? norm(link.href || '') : ''; var text = norm(c.innerText); var dataSku = norm(c.getAttribute('data-sku') || c.getAttribute('data-product-id') || ''); var tieneInc = false; for (var j = 0; j < incs.length; j++) { var incNorm = norm(incs[j]); if (incNorm && text.indexOf(incNorm) !== -1) { tieneInc = true; break; } } if (tieneInc) continue; if (sNorm && (dataSku === sNorm || href.indexOf(sNorm) !== -1 || text.indexOf(sNorm) !== -1)) { candidate = { card: c, link: link }; break; } if (eNorm && (text.indexOf(eNorm) !== -1 || href.indexOf(eNorm) !== -1)) { candidate = { card: c, link: link }; break; } if (urlNorm && href && (href.indexOf(urlNorm) !== -1 || urlNorm.indexOf(href) !== -1)) { candidate = { card: c, link: link }; break; } if (bNorm && text.indexOf(bNorm) !== -1) { var match = text.match(regex); var cardCant = match ? parseFloat(match[1].replace(',', '.')) : null; var cardUnit = match ? norm(match[2]) : ''; if (['kg', 'kilo', 'kilos', 'kilogramo', 'kilogramos'].indexOf(cardUnit) !== -1) cardUnit = 'kg'; else if (['g', 'gr', 'grs', 'gramo', 'gramos'].indexOf(cardUnit) !== -1) cardUnit = 'g'; else if (['ml', 'cc', 'cm3'].indexOf(cardUnit) !== -1) cardUnit = 'ml'; else if (['l', 'lt', 'lts', 'litro', 'litros'].indexOf(cardUnit) !== -1) cardUnit = 'l'; var presCompact = norm(String(cant || '')) + (uNorm ? uNorm.toLowerCase() : ''); var cantCoincide = (cardCant !== null && Math.abs(cardCant - cNorm) < 0.001 && (!cardUnit || cardUnit === uNorm)) || (text.indexOf(presCompact) !== -1); if (cantCoincide) { candidate = { card: c, link: link }; break; } } } if (candidate && candidate.card) { try { candidate.card.style.outline = '4px solid #00E676'; candidate.card.style.boxShadow = '0 0 15px #00E676'; candidate.card.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(e){} var targetEl = candidate.link || candidate.card; targetEl.setAttribute('id', 'tagui_target_dia'); return 'FOUND_EXACT'; } return 'NOT_FOUND'; })('`dia_sku`', '`ean`', '`dia_url`', '`marca`', '`producto`', '`cantidad`', '`unidad`', '`atributos_incompatibles`')
+dom return (function(sku, ean, refUrl, brand, prod, cant, unidad, incStr) { function norm(s){ return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); } var cards = document.querySelectorAll('section article, div[class*="product-summary"], article[class*="product"]'); var bNorm = norm(brand); var pNorm = norm(prod); var cNorm = parseFloat(String(cant || '').replace(',', '.')); var uNorm = norm(unidad); var sNorm = (sku && sku !== 'N/D') ? norm(sku) : ''; var eNorm = (ean && ean !== 'N/D') ? norm(ean) : ''; var urlNorm = (refUrl && refUrl.length > 5) ? norm(refUrl) : ''; var incs = (incStr && incStr !== 'N/D') ? incStr.split('|') : []; var regex = /\b(\d+(?:[.,]\d+)?)\s*(kg|kilos?|kilogramos?|g|gr|grs|gramos?|ml|cc|cm3|l|lt|lts|litros?)\b/i; var candidate = null; for (var i = 0; i < cards.length; i++) { var c = cards[i]; var link = c.querySelector('a[href*="/p"]') || c.querySelector('a'); var href = link ? norm(link.href || '') : ''; var text = norm(c.innerText); var dataSku = norm(c.getAttribute('data-sku') || c.getAttribute('data-product-id') || ''); var tieneInc = false; for (var j = 0; j < incs.length; j++) { var incNorm = norm(incs[j]); if (incNorm && text.indexOf(incNorm) !== -1) { tieneInc = true; break; } } if (tieneInc) continue; if (sNorm && (dataSku === sNorm || href.indexOf(sNorm) !== -1 || text.indexOf(sNorm) !== -1)) { candidate = { card: c, link: link }; break; } if (eNorm && (text.indexOf(eNorm) !== -1 || href.indexOf(eNorm) !== -1)) { candidate = { card: c, link: link }; break; } if (urlNorm && href && (href.indexOf(urlNorm) !== -1 || urlNorm.indexOf(href) !== -1)) { candidate = { card: c, link: link }; break; } if (bNorm && text.indexOf(bNorm) !== -1) { var match = text.match(regex); var cardCant = match ? parseFloat(match[1].replace(',', '.')) : null; var cardUnit = match ? norm(match[2]) : ''; if (['kg', 'kilo', 'kilos', 'kilogramo', 'kilogramos'].indexOf(cardUnit) !== -1) cardUnit = 'kg'; else if (['g', 'gr', 'grs', 'gramo', 'gramos'].indexOf(cardUnit) !== -1) cardUnit = 'g'; else if (['ml', 'cc', 'cm3'].indexOf(cardUnit) !== -1) cardUnit = 'ml'; else if (['l', 'lt', 'lts', 'litro', 'litros'].indexOf(cardUnit) !== -1) cardUnit = 'l'; var presCompact = norm(String(cant || '')) + (uNorm ? uNorm.toLowerCase() : ''); var cantCoincide = (cardCant !== null && Math.abs(cardCant - cNorm) < 0.001 && (!cardUnit || cardUnit === uNorm)) || (text.indexOf(presCompact) !== -1); if (cantCoincide) { candidate = { card: c, link: link }; break; } } } if (candidate && candidate.card) { try { candidate.card.style.outline = '4px solid #00E676'; candidate.card.style.boxShadow = '0 0 20px #00E676'; candidate.card.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(e){} var targetEl = candidate.link || candidate.card; targetEl.setAttribute('id', 'tagui_target_dia'); return 'FOUND_EXACT'; } return 'NOT_FOUND'; })('`dia_sku`', '`ean`', '`dia_url`', '`marca`', '`producto`', '`cantidad`', '`unidad`', '`atributos_incompatibles`')
 
 if dom_result equals to 'FOUND_EXACT'
-    echo -> Producto exacto localizado en Día %. Haciendo click real...
-    wait 1
+    echo -> Tarjeta candidata resaltada en pantalla con borde luminoso.
+    echo -> Realizando click real con TagUI en la tarjeta de Día %...
+    wait 2
     click #tagui_target_dia
     wait 4
 else
     echo -> No se localizo tarjeta con marca `marca` y presentacion `presentacion` en el listado de Día %.
     if (dia_url != '')
-        echo -> Accediendo a la referencia de catalogo para verificar ficha: `dia_url`
+        echo -> Accediendo a la referencia auxiliar de catalogo: `dia_url`
         targetDiaUrl = dia_url.replace(/^https?:\/\//, '')
         https://`targetDiaUrl`
         wait 4
@@ -301,8 +353,10 @@ js hayNavegacionDia = (dom_result === 'FOUND_EXACT' || (typeof dia_url !== 'unde
 
 if hayNavegacionDia equals to true
     // VALIDACIÓN ESTRICTA DE LA FICHA INDIVIDUAL (CAPA 2 - POLÍTICA DE IDENTIDAD REGLAS 1-16) EN DÍA %
+    echo -> Navegacion a ficha completada. Permaneciendo visible 4 segundos...
+    wait 4
     echo -> Extrayendo datos de la ficha individual en Día %...
-    dom return (function() { var titleEl = document.querySelector('h1, span[class*="productName"], [class*="product-name"]'); var title = titleEl ? titleEl.innerText.trim() : ''; var specsEl = document.querySelector('[class*="specification"], [class*="features"], [class*="description"], [class*="breadcrumb"], [class*="category"]'); var specs = specsEl ? specsEl.innerText.trim() : ''; var price = document.querySelector('[class*="sellingPrice"], [class*="currencyContainer"], [class*="price-best"]'); var priceText = price ? price.innerText.trim() : 'N/D'; var stockBtn = document.querySelector('button[class*="add-to-cart"], button[class*="buy-button"]'); var agotadoTxt = document.body.innerText.match(/agotado|sin stock|no disponible/i); var hayBotonActivo = (stockBtn && !stockBtn.disabled && !stockBtn.classList.contains('disabled')); var hayBotonDeshabilitado = (stockBtn && (stockBtn.disabled || stockBtn.classList.contains('disabled'))); var stock = 'NO_VERIFICADO'; if (!!agotadoTxt || hayBotonDeshabilitado) stock = 'AGOTADO'; else if (hayBotonActivo) stock = 'DISPONIBLE'; var promoBadge = document.querySelector('[class*="discount"], [class*="highlight"], [class*="badge"], [class*="promotion"]'); var promo = promoBadge ? promoBadge.innerText.trim() : 'Sin promocion'; return JSON.stringify({ titulo: title, cuerpo: specs, precio: priceText, stock: stock, promo: promo, url: window.location.href }); })()
+    dom return (function() { var titleEl = document.querySelector('h1, span[class*="productName"], [class*="product-name"]'); var title = titleEl ? titleEl.innerText.trim() : ''; var specsEl = document.querySelector('[class*="specification"], [class*="features"], [class*="description"], [class*="breadcrumb"], [class*="category"]'); var specs = specsEl ? specsEl.innerText.trim() : ''; var price = document.querySelector('[class*="sellingPrice"], [class*="currencyContainer"], [class*="price-best"]'); var priceText = price ? price.innerText.trim() : 'N/D'; var stockBtn = document.querySelector('button[class*="add-to-cart"], button[class*="buy-button"]'); var agotadoTxt = document.body.innerText.match(/agotado|sin stock|no disponible/i); var hayBotonActivo = (stockBtn && !stockBtn.disabled && !stockBtn.classList.contains('disabled')); var hayBotonDeshabilitado = (stockBtn && (stockBtn.disabled || stockBtn.classList.contains('disabled'))); var stock = 'NO_VERIFICADO'; if (!!agotadoTxt || hayBotonDeshabilitado) stock = 'AGOTADO'; else if (hayBotonActivo) stock = 'DISPONIBLE'; var promoBadge = document.querySelector('[class*="discount"], [class*="highlight"], [class*="badge"], [class*="promotion"]'); var promo = promoBadge ? promoBadge.innerText.trim() : 'Sin promocion'; return JSON.stringify({ titulo: title, cuerpo: specs, price: priceText, stock: stock, promo: promo, url: window.location.href }); })()
 
     js pdpDataDia = JSON.parse(dom_result || '{"titulo":""}')
     js pdpDataDia.supermercado = "Día %"
@@ -312,7 +366,7 @@ if hayNavegacionDia equals to true
         js diaSel = crearResultadoExitoso("Día %", pdpDataDia.titulo, pdpDataDia.precio, pdpDataDia.url, pdpDataDia.stock, pdpDataDia.promo, solicitudObj, 'SI')
         echo -> [VERIFICADO OK - `diaCheck.resultado`] `diaSel.nombre` (`diaSel.precio`)
         echo -> Stock: `diaSel.stock` | Promocion: `diaSel.promocion`
-        echo -> Permanencia visual pedagogica de 4 segundos en ficha...
+        echo -> Permanencia pedagogica de 4 segundos en ficha verificada...
         wait 4
     else
         echo -> [RECHAZADO DIA % - `diaCheck.resultado`] `diaCheck.motivo`
