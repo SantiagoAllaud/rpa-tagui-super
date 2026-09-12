@@ -48,33 +48,35 @@ if /i "%1"=="manual" set "MODO_EJECUCION=MANUAL"
 if /i "%MODO%"=="MANUAL" set "MODO_EJECUCION=MANUAL"
 if /i "%MODO_MANUAL%"=="1" set "MODO_EJECUCION=MANUAL"
 
-if "%MODO_EJECUCION%"=="MANUAL" (
-    echo [MODO MANUAL] Utilizando archivo input.csv existente...
-    if not exist "input.csv" (
-        color 0c
-        echo [ERROR] No se encontro el archivo input.csv.
-        echo Cree el archivo con las columnas: producto,marca,cantidad,unidad
-        pause
-        exit /b 1
-    )
-    echo [PASO 1/2] Validando productos contra catalogo local (catalogo/productos.json)...
-    echo(
-    call node validar_input.js input.csv
-    if errorlevel 1 (
-        color 0c
-        echo(
-        echo =====================================================================
-        echo [ERROR] La validacion del producto contra el catalogo ha fallado.
-        echo El RPA NO se iniciara hasta que se definan productos validos.
-        echo =====================================================================
-        echo(
-        pause
-        exit /b 1
-    )
-    goto INICIAR_TAGUI
-)
+if "%MODO_EJECUCION%"=="MANUAL" goto MODO_MANUAL_LABEL
+goto MODO_INTERACTIVO_LABEL
 
-:: MODO INTERACTIVO (Selección desde terminal contra catalogo/productos.json)
+:MODO_MANUAL_LABEL
+echo [MODO MANUAL] Utilizando archivo input.csv existente...
+if not exist "input.csv" (
+    color 0c
+    echo [ERROR] No se encontro el archivo input.csv.
+    echo Cree el archivo con las columnas: producto,marca,cantidad,unidad
+    pause
+    exit /b 1
+)
+echo [PASO 1/2] Validando productos contra catalogo local...
+echo(
+call node validar_input.js input.csv
+if errorlevel 1 (
+    color 0c
+    echo(
+    echo =====================================================================
+    echo [ERROR] La validacion del producto contra el catalogo ha fallado.
+    echo El RPA NO se iniciara hasta que se definan productos validos.
+    echo =====================================================================
+    echo(
+    pause
+    exit /b 1
+)
+goto INICIAR_TAGUI
+
+:MODO_INTERACTIVO_LABEL
 call node menu_interactivo.js
 set "EXIT_CODE=%ERRORLEVEL%"
 
@@ -102,6 +104,7 @@ if not "%EXIT_CODE%"=="0" (
     pause
     exit /b 1
 )
+goto INICIAR_TAGUI
 
 :INICIAR_TAGUI
 
