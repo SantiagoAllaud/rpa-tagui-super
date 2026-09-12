@@ -1,0 +1,11 @@
+# Ejemplos de referencia de años anteriores
+rpas ejemplos/
+
+# Archivos de depuración y temporales de TagUI
+*.log
+*.tmp
+*_error.png
+
+# Entornos virtuales o caché de Python
+__pycache__/
+*.pyc
