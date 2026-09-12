@@ -1,32 +1,31 @@
 # 🛒 UTN FRCU – Tecnologías para la Automatización
 ## RPA Supermercados: Comparador y Extractor de Precios con TagUI
 
-Automatización robótica de procesos (RPA) desarrollada en **TagUI** para consultar y comparar precios de una canasta de productos en los principales supermercados de Argentina: **Carrefour**, **COTO Digital** y **Día %**.
+Automatización robótica de procesos (RPA) desarrollada en **TagUI** para consultar, validar equivalencias y comparar precios de una canasta de productos en los principales supermercados de Argentina: **Carrefour**, **COTO Digital** y **Día %**, ejecutada de manera **VISIBLE** en **Google Chrome**.
 
 ---
 
 ## 📌 Descripción del Proyecto
 
-El bot automatiza la búsqueda periódica de productos comestibles y de limpieza para monitoreo de precios. 
+El robot automatiza la búsqueda periódica de productos comestibles y de limpieza con soporte para especificación de **presentación** (cantidad y unidad) y **marca**.
 
-A partir de un archivo de entrada con productos requeridos (`input.csv`), el robot interactúa con el navegador **Google Chrome**, realiza las búsquedas correspondientes en cada cadena de supermercados, extrae los datos del producto más relevante directamente del árbol DOM y persiste los hallazgos en un archivo local consolidado (`resultados.csv`).
+A partir de un archivo de entrada (`input.csv`), el robot:
+1. Abre **Google Chrome** de manera visible.
+2. Ingresa de forma independiente a **Carrefour**, **COTO** y **Día %**.
+3. Cierra de forma no bloqueante cookies, avisos de ubicación, códigos postales y promociones.
+4. Detecta el campo de búsqueda mediante una estrategia por niveles (priorizando atributos, IDs, placeholders y selectores semánticos).
+5. Escribe el producto y ejecuta la búsqueda.
+6. Extrae múltiples candidatos del árbol DOM.
+7. **Valida equivalencia real**: compara cantidad, unidad normalizada (`G`, `KG`, `ML`, `L`) y marca solicitada (descartando automáticamente diferencias de tamaño como `200ml` cuando se solicitó `1L`).
+8. Clasifica el resultado en estados claros: `OK`, `PRODUCTO_NO_ENCONTRADO`, `PRESENTACION_NO_ENCONTRADA`, `MARCA_NO_ENCONTRADA`, `ERROR_TIMEOUT`, etc.
+9. **Compara únicamente productos equivalentes**, los ordena de menor a mayor precio y señala cuál es el **MÁS BARATO** y el **MÁS CARO**.
+10. Persiste los resultados consolidados en `resultados.csv` con un esquema enriquecido de 13 columnas.
 
-### 🏛️ Diagrama de Arquitectura
-El flujo implementado responde exactamente al modelo funcional de la cátedra:
+---
+
+## 🏛️ Diagrama de Arquitectura
 
 ![Arquitectura del Bot](estructura.png)
-
-1. **Automatización RPA**:
-   - **TagUI (`scraper_supermercados.tag`)**: Motor de orquestación y navegación.
-   - **Google Chrome**: Control de la sesión web.
-   - **Websites Consultados**:
-     - 🔵 **Carrefour Argentina** (`carrefour.com.ar`)
-     - 🔴 **COTO Digital** (`cotodigital3.com.ar`)
-     - 🔴 **Día %** (`diaonline.supermercadosdia.com.ar`)
-   - **Extracción DOM**: Recolección textual de *Nombre*, *Precio*, *URL* y fecha de relevamiento.
-2. **Persistencia Local**:
-   - **`input.csv`**: Lista de productos a consultar (uno por fila).
-   - **`resultados.csv`**: Tabla de resultados estructurada.
 
 ---
 
@@ -36,11 +35,11 @@ El flujo implementado responde exactamente al modelo funcional de la cátedra:
 rpa tagui super/
 │
 ├── estructura.png             # Diagrama de arquitectura del flujo RPA
-├── input.csv                  # Archivo de entrada con la lista de productos
-├── resultados.csv             # Archivo generado con los datos extraídos
-├── scraper_supermercados.tag  # Script principal de TagUI
-├── tagui_local.js             # Funciones auxiliares JS (fechas, sanitizado CSV)
-├── ejecutar.bat               # Lanzador por doble clic en Windows
+├── input.csv                  # Archivo de entrada con la lista de productos (soporta cantidad/unidad)
+├── resultados.csv             # Archivo generado con los datos extraídos y clasificados (13 columnas)
+├── scraper_supermercados.tag  # Script principal de TagUI (flujo visible en Chrome)
+├── tagui_local.js             # Funciones auxiliares JS (parsing, normalización, equivalencias, comparación)
+├── ejecutar.bat               # Lanzador por doble clic en Windows (Chrome visible)
 └── README.md                  # Documentación del proyecto
 ```
 
@@ -49,26 +48,25 @@ rpa tagui super/
 ## 📊 Formato de Datos
 
 ### 1. Entrada (`input.csv`)
-Archivo CSV simple con cabecera `producto`:
+Archivo CSV con cabecera `producto`, soportando solicitudes genéricas o con presentación y marca:
 
 ```csv
 producto
-leche
-arroz
-fideos
-yerba mate
-aceite
+leche 1L
+arroz 500g
+fideos 500g
+yerba mate 1kg
+aceite 900ml
 ```
 
 ### 2. Salida (`resultados.csv`)
-Archivo CSV generado automáticamente con cabeceras estándar:
+Archivo CSV con esquema completo de 13 columnas:
 
 ```csv
-Nombre,Precio,Supermercado,URL,Fecha
-"Leche Entera Larga Vida 1 L","$ 1.250,00","Carrefour","https://...","11/09/2026"
-"Leche Ultrapasteurizada Entera 1 L","$ 1.190,00","COTO","https://...","11/09/2026"
-"Leche Parcialmente Descremada 1 L","$ 1.150,00","Día %","https://...","11/09/2026"
-...
+Nombre,Precio,Supermercado,URL,Fecha,Estado,ProductoSolicitado,Marca,Cantidad,Unidad,Presentacion,PrecioNumerico,EsEquivalente
+"Leche Protein La Serenisima 1L","$ 2.340,00","Carrefour","https://...","11/09/2026","OK","leche 1L","Generica","1","L","1L","2340","SI"
+"Leche Larga Vida Parcialmente Descremada COTO 1l","$1.698,97","COTO","https://...","11/09/2026","OK","leche 1L","Generica","1","L","1L","1698.97","SI"
+"Leche Semi Descremada DIA Larga Vida 1 Lt.","$ 1.700","Día %","https://...","11/09/2026","OK","leche 1L","Generica","1","L","1L","1700","SI"
 ```
 
 ---
@@ -78,43 +76,45 @@ Nombre,Precio,Supermercado,URL,Fecha
 1. **Google Chrome**: Asegurarse de tener instalado el navegador Google Chrome.
 2. **TagUI**:
    - Descargar la última versión desde el repositorio oficial: [TagUI Releases](https://github.com/aisingapore/TagUI/releases).
-   - Descomprimir el archivo `.zip` en una carpeta permanente (por ejemplo: `C:\tagui`).
-   - Agregar la ruta de la carpeta `src` (ejemplo: `C:\tagui\src`) a la variable de entorno `PATH` de Windows.
-   - Para verificar la instalación, abrir una terminal (PowerShell o CMD) y ejecutar:
+   - Descomprimir el archivo `.zip` en una carpeta permanente (ejemplo: `C:\tagui` o `C:\Users\<usuario>\tagui`).
+   - Agregar la ruta de la carpeta `src` (ejemplo: `C:\Users\<usuario>\tagui\src`) a la variable de entorno `PATH` de Windows.
+   - Para verificar la instalación, abrir CMD y ejecutar:
      ```cmd
      tagui
      ```
-     Deberá mostrar las opciones de ayuda del framework.
 
 ---
 
 ## 🚀 Instrucciones de Uso
 
 ### Opción A: Mediante el archivo ejecutable (Recomendado)
-Simplemente hacer doble clic sobre el archivo:
+Hacer doble clic sobre el archivo:
 ```
 ejecutar.bat
 ```
-El script verificará el entorno y lanzará la automatización visual en Chrome mostrando el progreso en consola.
+El script liberará automáticamente cualquier puerto bloqueado, validará `tagui` e `input.csv`, abrirá **Google Chrome VISIBLE** y mostrará los logs en consola paso a paso.
 
 ### Opción B: Mediante línea de comandos (CLI)
 Abrir una terminal en el directorio del proyecto y ejecutar:
 
 ```bash
-# Modo visual normal
+# Modo VISIBLE en Chrome (Requerido)
 tagui scraper_supermercados.tag input.csv
 
-# Modo headless (navegador invisible en segundo plano)
-tagui scraper_supermercados.tag input.csv -headless
-
-# Modo con reporte detallado
+# Modo con reporte HTML detallado
 tagui scraper_supermercados.tag input.csv -report
 ```
 
 ---
 
-## ⚙️ Decisiones Técnicas y Robustez
+## ⚙️ Características Técnicas y Robustez
 
-- **Extracción Híbrida DOM + JS**: Dado que las plataformas de comercio electrónico (como VTEX en Carrefour y Día) actualizan con frecuencia sus atributos CSS y nombres de clase dinámicos, la extracción se implementó mediante bloques `dom return (function() { ... })()`. Esto permite evaluar múltiples selectores de contingencia en JavaScript puro, garantizando que el bot no falle ante variaciones mínimas de diseño.
-- **Manejo de Modales de Ubicación**: Se implementaron rutinas no bloqueantes en JavaScript para detectar y cerrar automáticamente los avisos de código postal / sucursal y avisos de cookies.
-- **Sanitización de Datos CSV**: En `tagui_local.js` se incluyen utilidades para escapar comillas dobles (`"`), eliminar saltos de línea internos y normalizar espacios en blanco, evitando que el archivo `resultados.csv` sufra desalineaciones de columnas.
+- **Sin mouse virtual**: Interacción directa con el DOM real (clics por XPath y tipeo de búsqueda).
+- **Extracción multicandidato**: Analiza hasta 10 productos por tienda para encontrar la mejor coincidencia en vez de tomar ciegamente el primer ítem.
+- **Normalización de Unidades**:
+  - `g`, `gr`, `gramos` → `G`
+  - `kg`, `kilo`, `kilos`, `kilogramo` → `KG` (1 KG = 1000 G)
+  - `ml`, `mililitros` → `ML`
+  - `l`, `lt`, `litro`, `litros` → `L` (1 L = 1000 ML)
+- **Comparación de Equivalencia**: Descarta de la comparación de precios a los productos que no coincidan en tamaño (ej. `200ml` vs `1L`) o en la marca explícita solicitada.
+- **Resiliencia ante fallos**: Si un supermercado presenta timeout o error, se registra su estado específico (`ERROR_TIMEOUT`, `PRODUCTO_NO_ENCONTRADO`, etc.) y el bot continúa con el siguiente sin detenerse.
