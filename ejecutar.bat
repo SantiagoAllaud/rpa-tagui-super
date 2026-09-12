@@ -15,6 +15,9 @@ for /f "tokens=5" %%a in ('netstat -aon ^| findstr :9222 ^| findstr LISTENING 2^
     taskkill /f /pid %%a >nul 2>&1
 )
 
+:: Cerrar Excel en caso de que mantenga bloqueado resultados.csv
+taskkill /f /im excel.exe >nul 2>&1
+
 where tagui >nul 2>&1
 if errorlevel 1 (
     color 0c

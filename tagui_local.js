@@ -216,6 +216,11 @@ function seleccionarProductoCorrecto(candidatos, solicitud) {
     var huboCoincidenciaMarca = false;
     var huboCoincidenciaPresentacion = false;
 
+    var analisisLogs = [];
+    analisisLogs.push('------------------------------------------------------------');
+    analisisLogs.push('ANALISIS DE CANDIDATOS (' + candidatos.length + ' detectados)');
+    analisisLogs.push('------------------------------------------------------------');
+
     for (var i = 0; i < candidatos.length; i++) {
         var c = candidatos[i];
         var nombre = String(c.nombre || '');
@@ -224,6 +229,7 @@ function seleccionarProductoCorrecto(candidatos, solicitud) {
         var fullText = (nombre + ' ' + desc + ' ' + marcaCand).toLowerCase();
         var pres = extraerPresentacion(fullText);
         var puntaje = 0;
+        var descCandidato = 'Candidato ' + (i + 1) + '/' + candidatos.length + ': "' + nombre + '" (' + (c.precio || 'N/D') + ')';
 
         // 1. Coincidencia de tokens del producto
         var matches = 0;
@@ -231,18 +237,22 @@ function seleccionarProductoCorrecto(candidatos, solicitud) {
             if (fullText.indexOf(tokensSolicitud[k]) !== -1) matches++;
         }
         if (matches === 0) {
+            analisisLogs.push(descCandidato + ' -> DESCARTADO (categoria divergente: no contiene ' + solicitud.producto + ')');
             continue;
         }
         huboCoincidenciaNombre = true;
         puntaje += (matches * 20);
+        var detalleMotivos = ['coincide categoria'];
 
         // 2. Coincidencia de marca si fue especificada
         if (tieneMarca) {
             if (fullText.indexOf(marcaBuscada) !== -1 || marcaCand.toLowerCase().indexOf(marcaBuscada) !== -1) {
                 puntaje += 40;
                 huboCoincidenciaMarca = true;
+                detalleMotivos.push('marca coincidente (' + solicitud.marca + ')');
             } else {
                 puntaje -= 80;
+                detalleMotivos.push('marca divergente (esperada: ' + solicitud.marca + ')');
             }
         }
 
@@ -252,8 +262,10 @@ function seleccionarProductoCorrecto(candidatos, solicitud) {
             if (esEq) {
                 puntaje += 40;
                 huboCoincidenciaPresentacion = true;
+                detalleMotivos.push('presentacion compatible (' + pres.presentacion + ')');
             } else {
                 puntaje -= 90;
+                detalleMotivos.push('presentacion divergente (' + (pres.presentacion || 'N/D') + ' vs ' + solicitud.presentacion + ')');
             }
         }
 
@@ -268,7 +280,11 @@ function seleccionarProductoCorrecto(candidatos, solicitud) {
         }
         if (tieneModEspecial) {
             puntaje -= 50;
+            detalleMotivos.push('variante especial no solicitada');
         }
+
+        var veredicto = (puntaje >= UMBRAL_CONFIANZA && esEq && (!tieneMarca || huboCoincidenciaMarca)) ? 'VALIDO' : 'DESCARTADO';
+        analisisLogs.push(descCandidato + ' -> ' + veredicto + ' [Puntaje: ' + puntaje + ' | ' + detalleMotivos.join(', ') + ']');
 
         if (puntaje > mejorPuntaje) {
             mejorPuntaje = puntaje;
@@ -288,7 +304,7 @@ function seleccionarProductoCorrecto(candidatos, solicitud) {
     }
 
     if (!mejorCandidato || !huboCoincidenciaNombre) {
-        return {
+        var resNoNom = {
             estado: 'PRODUCTO_NO_ENCONTRADO',
             nombre: 'No encontrado',
             precio: 'N/D',
@@ -299,12 +315,15 @@ function seleccionarProductoCorrecto(candidatos, solicitud) {
             unidad: '',
             presentacion: 'N/D',
             esEquivalente: 'NO',
-            motivo: 'No se encontraron productos coincidentes con ' + solicitud.producto
+            motivo: 'No se encontraron productos coincidentes con ' + solicitud.producto,
+            analisisLogs: analisisLogs,
+            analisisTexto: analisisLogs.join('\n')
         };
+        return resNoNom;
     }
 
     if (tieneMarca && !huboCoincidenciaMarca) {
-        return {
+        var resNoMarca = {
             estado: 'MARCA_NO_ENCONTRADA',
             nombre: mejorCandidato.nombre,
             precio: mejorCandidato.precio,
@@ -315,12 +334,15 @@ function seleccionarProductoCorrecto(candidatos, solicitud) {
             unidad: mejorCandidato.unidad,
             presentacion: mejorCandidato.presentacion,
             esEquivalente: 'NO',
-            motivo: 'Marca solicitada (' + solicitud.marca + ') no encontrada'
+            motivo: 'Marca solicitada (' + solicitud.marca + ') no encontrada',
+            analisisLogs: analisisLogs,
+            analisisTexto: analisisLogs.join('\n')
         };
+        return resNoMarca;
     }
 
     if (solicitud.cantidad && solicitud.unidad && !huboCoincidenciaPresentacion) {
-        return {
+        var resNoPres = {
             estado: 'PRESENTACION_NO_ENCONTRADA',
             nombre: mejorCandidato.nombre,
             precio: mejorCandidato.precio,
@@ -331,12 +353,15 @@ function seleccionarProductoCorrecto(candidatos, solicitud) {
             unidad: mejorCandidato.unidad,
             presentacion: mejorCandidato.presentacion,
             esEquivalente: 'NO',
-            motivo: 'Presentacion solicitada (' + solicitud.presentacion + ') no encontrada. Mejor visto: ' + mejorCandidato.presentacion
+            motivo: 'Presentacion solicitada (' + solicitud.presentacion + ') no encontrada. Mejor visto: ' + mejorCandidato.presentacion,
+            analisisLogs: analisisLogs,
+            analisisTexto: analisisLogs.join('\n')
         };
+        return resNoPres;
     }
 
     if (mejorPuntaje < UMBRAL_CONFIANZA) {
-        return {
+        var resNoEq = {
             estado: 'NO_EQUIVALENTE',
             nombre: mejorCandidato.nombre,
             precio: mejorCandidato.precio,
@@ -347,12 +372,21 @@ function seleccionarProductoCorrecto(candidatos, solicitud) {
             unidad: mejorCandidato.unidad,
             presentacion: mejorCandidato.presentacion,
             esEquivalente: 'NO',
-            motivo: 'El puntaje de compatibilidad (' + mejorPuntaje + ') no alcanzo el umbral requerido (' + UMBRAL_CONFIANZA + ')'
+            motivo: 'El puntaje de compatibilidad (' + mejorPuntaje + ') no alcanzo el umbral requerido (' + UMBRAL_CONFIANZA + ')',
+            analisisLogs: analisisLogs,
+            analisisTexto: analisisLogs.join('\n')
         };
+        return resNoEq;
     }
+
+    analisisLogs.push('------------------------------------------------------------');
+    analisisLogs.push('-> SELECCIONADO: "' + mejorCandidato.nombre + '" (' + mejorCandidato.precio + ')');
+    analisisLogs.push('------------------------------------------------------------');
 
     mejorCandidato.estado = 'OK';
     mejorCandidato.esEquivalente = 'SI';
+    mejorCandidato.analisisLogs = analisisLogs;
+    mejorCandidato.analisisTexto = analisisLogs.join('\n');
     return mejorCandidato;
 }
 
@@ -375,34 +409,61 @@ function compararYOrdenar(resultados, solicitud) {
         return a.precioNumerico - b.precioNumerico;
     });
 
-    var report = [];
-    report.push('========================================');
-    report.push('COMPARACION FINAL: ' + solicitud.raw.toUpperCase());
-    report.push('========================================');
+    var lines = [];
+    lines.push('');
+    lines.push('==================================================');
+    lines.push('PRODUCTO SOLICITADO: ' + solicitud.raw.toUpperCase());
+    lines.push('==================================================');
+    lines.push('');
+
+    for (var j = 0; j < resultados.length; j++) {
+        var res = resultados[j];
+        lines.push(res.supermercado.toUpperCase());
+        if (res.estado === 'OK') {
+            lines.push('Producto: ' + res.nombre);
+            lines.push('Marca: ' + (res.marca || 'N/D'));
+            lines.push('Presentacion: ' + (res.presentacion || 'N/D'));
+            lines.push('Precio: ' + res.precio);
+            lines.push('Estado: OK');
+        } else {
+            lines.push('Estado: ' + res.estado);
+            lines.push('Motivo: ' + (res.motivo || 'No equivalente'));
+        }
+        lines.push('');
+    }
+
+    lines.push('--------------------------------------------------');
+    lines.push('COMPARACION');
+    lines.push('--------------------------------------------------');
+    lines.push('');
 
     if (validos.length > 0) {
-        for (var j = 0; j < validos.length; j++) {
-            var item = validos[j];
-            var tag = (j === 0) ? ' <-- MAS BARATO' : (j === validos.length - 1 && validos.length > 1 ? ' (Mas caro)' : '');
-            report.push((j + 1) + '. ' + item.supermercado + ' ' + item.precio + ' [' + item.nombre + ']' + tag);
+        for (var k = 0; k < validos.length; k++) {
+            var v = validos[k];
+            var pos = (k + 1) + '°';
+            var sName = (v.supermercado + '          ').substring(0, 12);
+            lines.push(pos + ' ' + sName + ' ' + v.precio);
         }
-        report.push('');
-        report.push('MAS BARATO: ' + validos[0].supermercado + ' (' + validos[0].precio + ')');
+        lines.push('');
+        lines.push('MAS BARATO:');
+        lines.push(validos[0].supermercado + ' -> ' + validos[0].precio);
+        lines.push('');
+
+        if (validos.length > 1) {
+            var masCaro = validos[validos.length - 1];
+            var masBarato = validos[0];
+            var diff = Math.round((masCaro.precioNumerico - masBarato.precioNumerico) * 100) / 100;
+            lines.push('DIFERENCIA CONTRA EL MAS CARO:');
+            lines.push('$' + diff);
+        }
     } else {
-        report.push('No se encontraron productos equivalentes en ningun supermercado.');
+        lines.push('No se encontraron productos equivalentes en ningun supermercado.');
     }
 
-    if (noValidos.length > 0) {
-        report.push('');
-        report.push('Supermercados sin coincidencia equivalente:');
-        for (var k = 0; k < noValidos.length; k++) {
-            var nv = noValidos[k];
-            report.push('- ' + nv.supermercado + ': ' + nv.estado + ' (' + (nv.motivo || 'No equivalente') + ')');
-        }
-    }
-    report.push('========================================');
+    lines.push('==================================================');
+    lines.push('');
 
-    var textOut = report.join('\n');
+    var textOut = lines.join('\n');
     console.log(textOut);
     return {
         validos: validos,

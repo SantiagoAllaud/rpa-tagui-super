@@ -1,4 +1,4 @@
 "Nombre","Precio","Supermercado","URL","Fecha","Estado","ProductoSolicitado","Marca","Cantidad","Unidad","Presentacion","PrecioNumerico","EsEquivalente"
-"Leche La serenisima liviana 1% 1L","$ 2.915,00","Carrefour","https://www.carrefour.com.ar/leche?_q=leche#reviews","12/09/2026","OK","leche 1L","Generica","1","L","1L","2915","SI"
-"Leche Larga Vida Parcialmente Descremada COTO 1l","$1.698,97","COTO","https://www.coto.com.ar/productos/leche/javascript:void(0)","12/09/2026","OK","leche 1L","Generica","1","L","1L","1698.97","SI"
-"Leche Semi Descremada DIA Larga Vida 1 Lt.","$ 1.700","Día %","https://diaonline.supermercadosdia.com.ar/","12/09/2026","OK","leche 1L","Generica","1","L","1L","1700","SI"
+"Leche La serenisima liviana 1% 1L","$ 2.915,00","Carrefour","https://www.carrefour.com.ar/leche?_q=leche","12/09/2026","OK","leche 1L","Generica","1","L","1L","2915","SI"
+"Leche Larga Vida Parcialmente Descremada COTO 1l","$1.698,97","COTO","https://www.coto.com.ar/productos/leche","12/09/2026","OK","leche 1L","Generica","1","L","1L","1698.97","SI"
+"Leche Semi Descremada DIA Larga Vida 1 Lt.","$ 1.700","Día %","https://diaonline.supermercadosdia.com.ar/leche?_q=leche&map=ft","12/09/2026","OK","leche 1L","Generica","1","L","1L","1700","SI"
