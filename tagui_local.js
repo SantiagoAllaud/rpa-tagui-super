@@ -1,8 +1,29 @@
 // ==============================================================================
-// tagui_local.js - Helpers y Lógica de Negocio para RPA de Supermercados
+// tagui_local.js - Helpers y Lógica de Negocio Avanzada para RPA de Supermercados
 // UTN FRCU - Tecnologías para la Automatización
 // Compatible con motor ES5 de TagUI (PhantomJS / CasperJS)
 // ==============================================================================
+
+// Categorías comerciales comunes en Argentina para separación léxica dinámica
+var CATEGORIAS_COMUNES = [
+    'yerba mate', 'dulce de leche', 'pure de tomate',
+    'leche', 'arroz', 'fideos', 'aceite', 'galletitas', 'galletas',
+    'yerba', 'harina', 'azucar', 'gaseosa', 'agua', 'jabon',
+    'shampoo', 'pan', 'queso', 'yogur', 'manteca', 'cafe',
+    'te', 'atun', 'mayonesa', 'pure', 'tomate', 'cerveza', 'vino',
+    'alfajor', 'alfajores'
+];
+
+// Modificadores especiales a penalizar en búsquedas genéricas
+var MODIFICADORES_ESPECIALES = [
+    'infantil', 'bebe', 'maternizada', 'formula',
+    'protein', 'proteina', 'saborizada', 'chocolate',
+    'frutilla', 'vainilla', 'polvo', 'condensada', 'evaporada',
+    'alfajor', 'alfajores'
+];
+
+// Umbral de confianza mínimo para considerar un producto equivalente (OK)
+var UMBRAL_CONFIANZA = 35;
 
 // 1. FECHA ACTUAL LOCAL
 function getFechaActual() {
@@ -32,10 +53,12 @@ function cleanPrice(str) {
 
 // 3. NORMALIZACIÓN DE URLS
 function formatUrl(baseUrl, path) {
-    if (!path || path === 'none' || path.indexOf('#') === 0) return baseUrl;
-    if (path.indexOf('http://') === 0 || path.indexOf('https://') === 0) return path;
-    if (path.indexOf('/') === 0) return baseUrl + path;
-    return baseUrl + '/' + path;
+    if (!path || path === 'none' || path.indexOf('#') === 0 || path.indexOf('javascript:') !== -1) return baseUrl;
+    var cleanPath = path.split('#')[0];
+    if (cleanPath.indexOf('javascript:') !== -1) return baseUrl;
+    if (cleanPath.indexOf('http://') === 0 || cleanPath.indexOf('https://') === 0) return cleanPath;
+    if (cleanPath.indexOf('/') === 0) return baseUrl + cleanPath;
+    return baseUrl + '/' + cleanPath;
 }
 
 // Codificar término para URL
@@ -74,33 +97,51 @@ function parsePrice(str) {
     return isNaN(val) ? 0.0 : val;
 }
 
-// 6. PARSEO DE LA SOLICITUD (PRODUCTO, CANTIDAD, UNIDAD, MARCA)
+// 6. PARSEO GENERALIZADO DE LA SOLICITUD (SIN LISTAS HARDCODEADAS)
 function parseSolicitud(s) {
     var raw = String(s || '').trim();
     var match = raw.match(/\b(\d+(?:[.,]\d+)?)\s*(litros?|lts?|lt|l|kilos?|kilogramos?|kgs?|kg|gramos?|grs?|gr|g|mililitros?|mls?|ml)\b/i);
     var cantidad = null;
     var unidad = null;
     var presentacion = 'Cualquiera';
-    var prodTerm = raw;
+    var textSinPres = raw;
 
     if (match) {
         cantidad = parseFloat(match[1].replace(',', '.'));
         unidad = normalizarUnidad(match[2]);
         presentacion = cantidad + unidad;
-        prodTerm = (raw.substring(0, match.index) + ' ' + raw.substring(match.index + match[0].length)).trim();
-        prodTerm = prodTerm.replace(/\s{2,}/g, ' ');
+        textSinPres = (raw.substring(0, match.index) + ' ' + raw.substring(match.index + match[0].length)).trim();
+        textSinPres = textSinPres.replace(/\s{2,}/g, ' ');
     }
 
-    var brandRegex = /\b(oreo|la serenisima|sancor|coto|carrefour|dia|knorr|marolio|natura|arcor|terrabusi|toddy|chocolinas|quilmes|coca cola|pepsi)\b/i;
-    var bMatch = prodTerm.match(brandRegex);
+    var lower = textSinPres.toLowerCase();
+    var catEncontrada = null;
+
+    for (var i = 0; i < CATEGORIAS_COMUNES.length; i++) {
+        var cat = CATEGORIAS_COMUNES[i];
+        if (lower === cat || lower.indexOf(cat + ' ') === 0) {
+            catEncontrada = cat;
+            break;
+        }
+    }
+
+    var producto = textSinPres;
     var marca = 'cualquiera';
-    if (bMatch) {
-        marca = bMatch[1];
+
+    if (catEncontrada) {
+        producto = catEncontrada;
+        var resto = textSinPres.substring(catEncontrada.length).trim();
+        if (resto.length > 0) {
+            marca = resto;
+        }
+    } else {
+        producto = textSinPres;
+        marca = textSinPres;
     }
 
     return {
         raw: raw,
-        producto: prodTerm,
+        producto: producto,
         cantidad: cantidad,
         unidad: unidad,
         marca: marca,
@@ -167,36 +208,41 @@ function seleccionarProductoCorrecto(candidatos, solicitud) {
 
     var tokensSolicitud = solicitud.producto.toLowerCase().split(/\s+/).filter(function(t) { return t.length > 2; });
     var tieneMarca = solicitud.marca && solicitud.marca.toLowerCase() !== 'cualquiera';
+    var marcaBuscada = tieneMarca ? solicitud.marca.toLowerCase() : null;
 
     var mejorCandidato = null;
     var mejorPuntaje = -999;
     var huboCoincidenciaNombre = false;
     var huboCoincidenciaMarca = false;
+    var huboCoincidenciaPresentacion = false;
 
     for (var i = 0; i < candidatos.length; i++) {
         var c = candidatos[i];
-        var text = (c.nombre + ' ' + (c.descripcion || '')).toLowerCase();
-        var pres = extraerPresentacion(text);
+        var nombre = String(c.nombre || '');
+        var desc = String(c.descripcion || '');
+        var marcaCand = String(c.marca || '');
+        var fullText = (nombre + ' ' + desc + ' ' + marcaCand).toLowerCase();
+        var pres = extraerPresentacion(fullText);
         var puntaje = 0;
 
-        // 1. Coincidencia del término del producto
+        // 1. Coincidencia de tokens del producto
         var matches = 0;
         for (var k = 0; k < tokensSolicitud.length; k++) {
-            if (text.indexOf(tokensSolicitud[k]) !== -1) matches++;
+            if (fullText.indexOf(tokensSolicitud[k]) !== -1) matches++;
         }
         if (matches === 0) {
             continue;
         }
         huboCoincidenciaNombre = true;
-        puntaje += (matches * 10);
+        puntaje += (matches * 20);
 
-        // 2. Coincidencia de marca si fue solicitada
+        // 2. Coincidencia de marca si fue especificada
         if (tieneMarca) {
-            if (text.indexOf(solicitud.marca.toLowerCase()) !== -1) {
-                puntaje += 30;
+            if (fullText.indexOf(marcaBuscada) !== -1 || marcaCand.toLowerCase().indexOf(marcaBuscada) !== -1) {
+                puntaje += 40;
                 huboCoincidenciaMarca = true;
             } else {
-                puntaje -= 50;
+                puntaje -= 80;
             }
         }
 
@@ -205,23 +251,37 @@ function seleccionarProductoCorrecto(candidatos, solicitud) {
         if (solicitud.cantidad && solicitud.unidad) {
             if (esEq) {
                 puntaje += 40;
+                huboCoincidenciaPresentacion = true;
             } else {
-                puntaje -= 100;
+                puntaje -= 90;
             }
+        }
+
+        // 4. Penalización por modificadores especiales no solicitados
+        var tieneModEspecial = false;
+        for (var m = 0; m < MODIFICADORES_ESPECIALES.length; m++) {
+            var mod = MODIFICADORES_ESPECIALES[m];
+            if (fullText.indexOf(mod) !== -1 && solicitud.raw.toLowerCase().indexOf(mod) === -1) {
+                tieneModEspecial = true;
+                break;
+            }
+        }
+        if (tieneModEspecial) {
+            puntaje -= 50;
         }
 
         if (puntaje > mejorPuntaje) {
             mejorPuntaje = puntaje;
             mejorCandidato = {
-                nombre: c.nombre,
+                nombre: nombre,
                 precio: c.precio,
                 precioNumerico: parsePrice(c.precio),
                 url: c.url || '',
-                marca: tieneMarca ? solicitud.marca : (c.marca || 'Generica'),
+                marca: c.marca || (tieneMarca ? solicitud.marca : 'Generica'),
                 cantidad: pres.cantidad ? String(pres.cantidad) : '',
                 unidad: pres.unidad || '',
                 presentacion: pres.presentacion,
-                esEquivalente: esEq ? 'SI' : 'NO',
+                esEquivalente: (esEq && (!tieneMarca || huboCoincidenciaMarca)) ? 'SI' : 'NO',
                 puntaje: puntaje
             };
         }
@@ -243,23 +303,23 @@ function seleccionarProductoCorrecto(candidatos, solicitud) {
         };
     }
 
-    if (tieneMarca && !huboCoincidenciaMarca && mejorCandidato.puntaje < 0) {
+    if (tieneMarca && !huboCoincidenciaMarca) {
         return {
             estado: 'MARCA_NO_ENCONTRADA',
             nombre: mejorCandidato.nombre,
             precio: mejorCandidato.precio,
             precioNumerico: mejorCandidato.precioNumerico,
             url: mejorCandidato.url,
-            marca: 'No disponible',
+            marca: mejorCandidato.marca,
             cantidad: mejorCandidato.cantidad,
             unidad: mejorCandidato.unidad,
             presentacion: mejorCandidato.presentacion,
             esEquivalente: 'NO',
-            motivo: 'Marca ' + solicitud.marca + ' no encontrada entre los resultados'
+            motivo: 'Marca solicitada (' + solicitud.marca + ') no encontrada'
         };
     }
 
-    if (solicitud.cantidad && solicitud.unidad && mejorCandidato.esEquivalente !== 'SI') {
+    if (solicitud.cantidad && solicitud.unidad && !huboCoincidenciaPresentacion) {
         return {
             estado: 'PRESENTACION_NO_ENCONTRADA',
             nombre: mejorCandidato.nombre,
@@ -271,11 +331,28 @@ function seleccionarProductoCorrecto(candidatos, solicitud) {
             unidad: mejorCandidato.unidad,
             presentacion: mejorCandidato.presentacion,
             esEquivalente: 'NO',
-            motivo: 'Presentacion solicitada (' + solicitud.presentacion + ') no encontrada. Se vio: ' + mejorCandidato.presentacion
+            motivo: 'Presentacion solicitada (' + solicitud.presentacion + ') no encontrada. Mejor visto: ' + mejorCandidato.presentacion
+        };
+    }
+
+    if (mejorPuntaje < UMBRAL_CONFIANZA) {
+        return {
+            estado: 'NO_EQUIVALENTE',
+            nombre: mejorCandidato.nombre,
+            precio: mejorCandidato.precio,
+            precioNumerico: mejorCandidato.precioNumerico,
+            url: mejorCandidato.url,
+            marca: mejorCandidato.marca,
+            cantidad: mejorCandidato.cantidad,
+            unidad: mejorCandidato.unidad,
+            presentacion: mejorCandidato.presentacion,
+            esEquivalente: 'NO',
+            motivo: 'El puntaje de compatibilidad (' + mejorPuntaje + ') no alcanzo el umbral requerido (' + UMBRAL_CONFIANZA + ')'
         };
     }
 
     mejorCandidato.estado = 'OK';
+    mejorCandidato.esEquivalente = 'SI';
     return mejorCandidato;
 }
 
@@ -286,7 +363,7 @@ function compararYOrdenar(resultados, solicitud) {
 
     for (var i = 0; i < resultados.length; i++) {
         var r = resultados[i];
-        if (r.estado === 'OK' && r.precioNumerico > 0) {
+        if (r.estado === 'OK' && r.esEquivalente === 'SI' && r.precioNumerico > 0) {
             validos.push(r);
         } else {
             noValidos.push(r);
@@ -331,5 +408,45 @@ function compararYOrdenar(resultados, solicitud) {
         validos: validos,
         masBarato: validos.length > 0 ? validos[0] : null,
         reporteTexto: textOut
+    };
+}
+
+// 11. CREACIÓN DE RESULTADO DE ERROR O FALLO
+function crearResultadoError(supermercado, estado, motivo, solicitud) {
+    return {
+        supermercado: supermercado || 'N/D',
+        estado: estado || 'ERROR_NAVEGACION',
+        nombre: 'No encontrado (' + (estado || 'ERROR') + ')',
+        precio: 'N/D',
+        precioNumerico: 0.0,
+        url: '',
+        marca: (solicitud && solicitud.marca && solicitud.marca !== 'cualquiera') ? solicitud.marca : 'N/D',
+        cantidad: (solicitud && solicitud.cantidad) ? String(solicitud.cantidad) : '',
+        unidad: (solicitud && solicitud.unidad) ? solicitud.unidad : '',
+        presentacion: (solicitud && solicitud.presentacion) ? solicitud.presentacion : 'N/D',
+        esEquivalente: 'NO',
+        motivo: motivo || estado || 'Fallo durante la navegacion o extraccion'
+    };
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        CATEGORIAS_COMUNES: CATEGORIAS_COMUNES,
+        MODIFICADORES_ESPECIALES: MODIFICADORES_ESPECIALES,
+        UMBRAL_CONFIANZA: UMBRAL_CONFIANZA,
+        getFechaActual: getFechaActual,
+        cleanCsv: cleanCsv,
+        cleanPrice: cleanPrice,
+        formatUrl: formatUrl,
+        encodeSearchTerm: encodeSearchTerm,
+        normalizarUnidad: normalizarUnidad,
+        parsePrice: parsePrice,
+        parseSolicitud: parseSolicitud,
+        extraerPresentacion: extraerPresentacion,
+        toBaseUnit: toBaseUnit,
+        sonPresentacionesEquivalentes: sonPresentacionesEquivalentes,
+        seleccionarProductoCorrecto: seleccionarProductoCorrecto,
+        compararYOrdenar: compararYOrdenar,
+        crearResultadoError: crearResultadoError
     };
 }

@@ -37,10 +37,20 @@ echo (Se abrira Google Chrome VISIBLE para realizar la navegacion e interaccion)
 echo(
 
 call tagui scraper_supermercados.tag input.csv
+if errorlevel 1 (
+    color 0c
+    echo(
+    echo =====================================================================
+    echo [ERROR] El RPA termino con errores durante la ejecucion.
+    echo =====================================================================
+    echo(
+    pause
+    exit /b 1
+)
 
 echo(
 echo =====================================================================
-echo [FIN] Proceso completado exitosamente.
+echo [OK] El RPA finalizo correctamente.
 echo Los datos han sido guardados en el archivo: resultados.csv
 echo =====================================================================
 echo(
