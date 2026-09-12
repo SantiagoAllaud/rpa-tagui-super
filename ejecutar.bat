@@ -42,24 +42,60 @@ if errorlevel 1 (
     exit /b 1
 )
 
-:: 5. Validar existencia del archivo input.csv
-if not exist "input.csv" (
-    color 0c
-    echo [ERROR] No se encontro el archivo input.csv.
-    echo Cree el archivo con las columnas: producto,marca,cantidad,unidad
-    pause
-    exit /b 1
+:: 5. Determinar Modo de Ejecución (INTERACTIVO por defecto o MANUAL con input.csv)
+set "MODO_EJECUCION=INTERACTIVO"
+if /i "%1"=="manual" set "MODO_EJECUCION=MANUAL"
+if /i "%MODO%"=="MANUAL" set "MODO_EJECUCION=MANUAL"
+if /i "%MODO_MANUAL%"=="1" set "MODO_EJECUCION=MANUAL"
+
+if "%MODO_EJECUCION%"=="MANUAL" (
+    echo [MODO MANUAL] Utilizando archivo input.csv existente...
+    if not exist "input.csv" (
+        color 0c
+        echo [ERROR] No se encontro el archivo input.csv.
+        echo Cree el archivo con las columnas: producto,marca,cantidad,unidad
+        pause
+        exit /b 1
+    )
+    echo [PASO 1/2] Validando productos contra catalogo local (catalogo/productos.json)...
+    echo(
+    call node validar_input.js input.csv
+    if errorlevel 1 (
+        color 0c
+        echo(
+        echo =====================================================================
+        echo [ERROR] La validacion del producto contra el catalogo ha fallado.
+        echo El RPA NO se iniciara hasta que se definan productos validos.
+        echo =====================================================================
+        echo(
+        pause
+        exit /b 1
+    )
+    goto INICIAR_TAGUI
 )
 
-:: 6. Validar obligatoriamente la combinacion de producto contra el catalogo local
-echo [PASO 1/2] Validando productos contra catalogo local (catalogo/productos.json)...
-echo(
-call node validar_input.js input.csv
-if errorlevel 1 (
+:: MODO INTERACTIVO (Selección desde terminal contra catalogo/productos.json)
+call node menu_interactivo.js
+set "EXIT_CODE=%ERRORLEVEL%"
+
+if "%EXIT_CODE%"=="3" (
+    echo(
+    echo Programa finalizado por el usuario.
+    exit /b 0
+)
+
+if "%EXIT_CODE%"=="2" (
+    echo(
+    echo [INFO] Ejecucion cancelada por el usuario. No se inicio TagUI.
+    pause
+    exit /b 0
+)
+
+if not "%EXIT_CODE%"=="0" (
     color 0c
     echo(
     echo =====================================================================
-    echo [ERROR] La validacion del producto contra el catalogo ha fallado.
+    echo [ERROR] La seleccion o validacion del producto ha fallado.
     echo El RPA NO se iniciara hasta que se definan productos validos.
     echo =====================================================================
     echo(
@@ -67,12 +103,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-if not exist "input_tagui.csv" (
-    color 0c
-    echo [ERROR] No se genero el archivo de trabajo input_tagui.csv.
-    pause
-    exit /b 1
-)
+:INICIAR_TAGUI
 
 echo(
 echo [PASO 2/2] Iniciando automatizacion RPA en vivo con TagUI...

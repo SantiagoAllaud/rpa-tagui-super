@@ -1,5 +1,5 @@
 // ==============================================================================
-// tests/test_suite.js - Batería Integral de 24 Pruebas Automatizadas
+// tests/test_suite.js - Batería Integral de 33 Pruebas Automatizadas
 // UTN FRCU - Tecnologías para la Automatización
 // Ejecución: node tests/test_suite.js
 // ==============================================================================
@@ -10,6 +10,7 @@ const { execSync } = require('child_process');
 
 // Cargar módulos y catálogo del sistema
 const taguiLocal = require('../tagui_local.js');
+const menuInteractivo = require('../menu_interactivo.js');
 const catalogoPath = path.join(__dirname, '..', 'catalogo', 'productos.json');
 const catalogo = JSON.parse(fs.readFileSync(catalogoPath, 'utf8'));
 
@@ -141,7 +142,7 @@ function validarFichaPDP(title, bodyText, marcaReq, prodReq, cantReq, unidadReq,
 }
 
 console.log('=====================================================================');
-console.log('       EJECUCION DE LA BATERIA DE 24 PRUEBAS UNITARIAS');
+console.log('       EJECUCION DE LA BATERIA DE 33 PRUEBAS UNITARIAS');
 console.log('       rpa-tagui-super (UTN FRCU - Tecnologías para la Automatización)');
 console.log('=====================================================================\n');
 
@@ -330,15 +331,106 @@ if (fs.existsSync(tempInputInv)) fs.unlinkSync(tempInputInv);
 if (fs.existsSync(tempInputVal)) fs.unlinkSync(tempInputVal);
 
 // -----------------------------------------------------------------------------
+// BLOQUE 8: MODO INTERACTIVO Y SELECCIÓN DESDE TERMINAL (Tests 31 - 39)
+// -----------------------------------------------------------------------------
+console.log('\n[BLOQUE 8] Modo interactivo y selección de catálogo desde terminal');
+
+// TEST 31: Mostrar solamente productos activos
+const catalogoPrueba = [
+    { id_producto: 'ACTIVO_1', producto: 'Galletitas', marca: 'Oreo', cantidad: 118, unidad: 'g', presentacion: '118g', activo: true, supermercados: { Carrefour: { url: 'https://...' } } },
+    { id_producto: 'INACTIVO_1', producto: 'Galletitas', marca: 'Fantasma', cantidad: 100, unidad: 'g', presentacion: '100g', activo: false, supermercados: {} },
+    { id_producto: 'ACTIVO_2', producto: 'Leche', marca: 'La Serenisima', cantidad: 1, unidad: 'L', presentacion: '1L', activo: true, supermercados: { Carrefour: { url: 'https://...' } } }
+];
+const resActivos = menuInteractivo.obtenerProductosActivos(catalogoPrueba);
+const soloActivos = resActivos.every(p => p.activo === true) && resActivos.length === 2;
+assert(soloActivos, '31: Mostrar solamente productos activos (excluye inactivos)');
+
+// TEST 32: Seleccionar índice válido devuelve exactamente el registro correcto del catálogo
+const itemSeleccionado = menuInteractivo.seleccionarPorIndice(resActivos, 1);
+assert(
+    itemSeleccionado && itemSeleccionado.id_producto === 'ACTIVO_1' && itemSeleccionado.marca === 'Oreo',
+    '32: Seleccionar índice válido devuelve exactamente el registro correcto del catálogo'
+);
+
+// TEST 33: Índice inexistente produce error y no inicia TagUI
+const itemInvalidoIdx = menuInteractivo.seleccionarPorIndice(resActivos, 999);
+const itemInvalidoLetras = menuInteractivo.seleccionarPorIndice(resActivos, 'abc');
+const itemInvalidoCero = menuInteractivo.seleccionarPorIndice(resActivos, 0);
+assert(
+    itemInvalidoIdx === null && itemInvalidoLetras === null && itemInvalidoCero === null,
+    '33: Índice inexistente produce error/null y no inicia TagUI'
+);
+
+// TEST 34: Búsqueda "oreo" devuelve únicamente productos Oreo existentes en catálogo
+const todosActivos = menuInteractivo.obtenerProductosActivos(catalogo);
+const filtradosOreo = menuInteractivo.filtrarCatalogo(todosActivos, 'oreo');
+const soloOreo = filtradosOreo.length > 0 && filtradosOreo.every(p => p.marca.toLowerCase().includes('oreo') || p.producto.toLowerCase().includes('oreo'));
+assert(
+    soloOreo,
+    '34: Búsqueda "oreo" devuelve únicamente productos Oreo existentes en catálogo'
+);
+
+// TEST 35: Búsqueda inexistente no genera productos nuevos
+const filtradosInexistentes = menuInteractivo.filtrarCatalogo(todosActivos, 'producto_totalmente_inexistente_xyz_123');
+assert(
+    Array.isArray(filtradosInexistentes) && filtradosInexistentes.length === 0,
+    '35: Búsqueda inexistente devuelve lista vacía y no genera productos nuevos'
+);
+
+// TEST 36: Producto seleccionado genera correctamente: producto + marca + cantidad + unidad
+const itemOreo118 = catalogo.find(p => p.id_producto === 'GAL_OREO_118G');
+const tempInputTest36 = path.join(__dirname, 'temp_input_test36.csv');
+menuInteractivo.generarInputTrabajo(itemOreo118, tempInputTest36);
+const contenidoTest36 = fs.readFileSync(tempInputTest36, 'utf8');
+const lineas36 = contenidoTest36.trim().split(/\r?\n/);
+assert(
+    lineas36[0] === 'producto,marca,cantidad,unidad' &&
+    lineas36[1] === '"Galletitas","Oreo","118","g"',
+    '36: Producto seleccionado genera correctamente: producto + marca + cantidad + unidad'
+);
+
+// TEST 37: Producto seleccionado pasa por el mismo validar_input.js existente
+let exitCodeTest37 = 0;
+try {
+    execSync(`node "${path.join(__dirname, '..', 'validar_input.js')}" "${tempInputTest36}"`, { stdio: 'pipe' });
+} catch (e) {
+    exitCodeTest37 = e.status;
+}
+const taguiGenerado37 = fs.existsSync(taguiOutputFile);
+assert(
+    exitCodeTest37 === 0 && taguiGenerado37,
+    '37: Producto seleccionado pasa por el mismo validar_input.js existente y genera input_tagui.csv'
+);
+if (fs.existsSync(tempInputTest36)) fs.unlinkSync(tempInputTest36);
+
+// TEST 38: Cancelar confirmación no inicia TagUI
+const respCancel = menuInteractivo.procesarConfirmacion('N');
+const respCancelMin = menuInteractivo.procesarConfirmacion('n');
+const respOk = menuInteractivo.procesarConfirmacion('S');
+assert(
+    respCancel === 'CANCELADO' && respCancelMin === 'CANCELADO' && respOk === 'CONFIRMADO',
+    '38: Cancelar confirmación [N/n] detecta estado CANCELADO y no inicia TagUI'
+);
+
+// TEST 39: No se puede modificar manualmente la identidad del producto desde el menú
+const itemAlterado = Object.assign({}, itemOreo118, { cantidad: 999 });
+const valAlterado = menuInteractivo.validarRegistroSeleccionado(itemAlterado, catalogo);
+const itemOriginal = menuInteractivo.validarRegistroSeleccionado(itemOreo118, catalogo);
+assert(
+    !valAlterado.valido && itemOriginal.valido === true,
+    '39: No se puede modificar manualmente la identidad del producto desde el menú (detecta alteración)'
+);
+
+// -----------------------------------------------------------------------------
 // RESUMEN FINAL
 // -----------------------------------------------------------------------------
 console.log('\n=====================================================================');
-console.log(`RESULTADO DE LA BATERIA: ${passedTests}/24 PRUEBAS EXITOSAS`);
+console.log(`RESULTADO DE LA BATERIA: ${passedTests}/33 PRUEBAS EXITOSAS`);
 if (failedTests > 0) {
     console.error(`\x1b[31m[FALLO] ${failedTests} pruebas fallaron.\x1b[0m`);
     process.exit(1);
 } else {
-    console.log('\x1b[32m[EXITO TOTAL] Las 24 pruebas pasaron satisfactoriamente.\x1b[0m');
+    console.log('\x1b[32m[EXITO TOTAL] Las 33 pruebas pasaron satisfactoriamente.\x1b[0m');
     console.log('El sistema se encuentra en un estado determinístico, robusto y verificable.');
     console.log('=====================================================================\n');
     process.exit(0);

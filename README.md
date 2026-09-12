@@ -71,9 +71,10 @@ rpa tagui super/
 │   └── actualizar_catalogo.js   # Script administrativo para listar, verificar o actualizar el catálogo
 │
 ├── tests/
-│   ├── test_suite.js            # Batería completa de 24 pruebas unitarias determinísticas
+│   ├── test_suite.js            # Batería completa de 33 pruebas unitarias determinísticas (Tests 1-24 + 31-39)
 │   └── smoke_tagui.tag          # Smoke test para verificar operatividad del motor TagUI
 │
+├── menu_interactivo.js          # Menú interactivo de selección determinística desde terminal
 ├── validar_input.js             # Validador estricto previo a la ejecución de TagUI
 ├── input.csv                    # Archivo de entrada con las 4 columnas obligatorias
 ├── input_tagui.csv              # Archivo intermedio generado con referencias resueltas para TagUI
@@ -123,12 +124,12 @@ Nombre,Precio,Supermercado,URL,Fecha,Estado,ProductoSolicitado,Marca,Cantidad,Un
 
 El proyecto cuenta con verificación automatizada en múltiples niveles:
 
-### 1. Batería de 24 Pruebas Unitarias Determinísticas
-Ejecuta la suite completa de 24 pruebas que validan entradas, identidad, jerarquía DOM, PDP, parseo de precios, stock y promociones:
+### 1. Batería de 33 Pruebas Unitarias Determinísticas (Tests 1-24 y 31-39)
+Ejecuta la suite completa de 33 pruebas que validan entradas, identidad, jerarquía DOM, PDP, parseo de precios, stock, promociones y el modo interactivo por terminal:
 ```bash
 node tests/test_suite.js
 ```
-*Salida esperada:* `[EXITO TOTAL] Las 24 pruebas pasaron satisfactoriamente.`
+*Salida esperada:* `[EXITO TOTAL] Las 33 pruebas pasaron satisfactoriamente.`
 
 ### 2. Smoke Test de TagUI
 Verifica que TagUI puede lanzar el navegador, interactuar con el DOM y escribir archivos locales:
@@ -147,21 +148,65 @@ node catalogo/actualizar_catalogo.js verificar
 
 ## 🚀 Instrucciones de Uso en Vivo
 
-### Ejecución Directa (Recomendado)
+### 1. Modo Interactivo desde Terminal (Por Defecto)
 Hacer doble clic sobre el archivo:
 ```
 ejecutar.bat
 ```
-El script realiza los siguientes pasos automatizados:
-1. Limpia procesos huérfanos propios de TagUI (`php.exe`, `tee.exe`) y libera el puerto de depuración 9222 **sin afectar aplicaciones del usuario como Excel**.
-2. Ejecuta `node validar_input.js input.csv`. Si alguna fila es inválida o no coincide con el catálogo, aborta inmediatamente con código 1 sin abrir Chrome ni generar archivos parciales.
-3. Si todas las filas son válidas, abre **Google Chrome en modo VISIBLE y pantalla completa (F11)**.
-4. Para cada tienda (Carrefour, COTO y Día %):
-   - Localiza la tarjeta en el DOM siguiendo la jerarquía estricta: `SKU -> EAN -> URL -> Tokens de Identidad`.
-   - Realiza scroll visual y clic real sobre la tarjeta confirmada.
-   - Valida en la ficha individual (PDP) los 5 criterios obligatorios (Marca, Producto, Cantidad, Unidad, Presentación).
-   - Permanece **4 segundos pedagógicos visibles** en la ficha para demostración ante la cátedra.
-5. Genera `resultados.csv` (15 columnas) y proyecta en la terminal el ranking comparativo por menor precio.
+O ejecutar en la terminal:
+```bash
+node menu_interactivo.js
+```
+
+Flujo interactivo paso a paso:
+1. **Menú Principal:**
+   ```text
+   ============================================================
+   RPA COMPARADOR DE PRECIOS - UTN FRCU
+   ====================================
+
+   1 - Elegir producto del catálogo
+   2 - Salir
+   ```
+2. **Búsqueda / Filtrado:** Ingrese un término (ej. `oreo`) o presione Enter para listar todo el catálogo activo.
+3. **Listado Numérico Temporal:**
+   ```text
+   1 - Galletitas | Oreo | 118g
+   2 - Galletitas | Oreo | 154g
+   ```
+4. **Selección:** Ingrese el número temporal (ej. `1`). El sistema recupera el registro original de `catalogo/productos.json` y valida su integridad e inmutabilidad.
+5. **Ficha Resumen y Confirmación:**
+   ```text
+   ============================================================
+   PRODUCTO SELECCIONADO
+   =====================
+   Producto: Galletitas
+   Marca: Oreo
+   Cantidad: 118
+   Unidad: g
+   Presentación: 118g
+   ID: GAL_OREO_118G
+
+   Disponibilidad de referencias:
+   Carrefour: SI
+   COTO: SI
+   Día %: SI
+   ============================================================
+
+   ¿Ejecutar RPA con este producto? [S/N]: S
+   ```
+6. **Ejecución Automática:** Genera la entrada de trabajo, ejecuta la barrera obligatoria `validar_input.js` e inicia el RPA en Google Chrome visible.
+
+### 2. Modo Manual Alternativo (`input.csv`)
+Si se desea correr un lote predefinido o realizar pruebas sin interacción:
+- Editar directamente `input.csv` con las 4 columnas (`producto,marca,cantidad,unidad`).
+- Ejecutar:
+  ```bash
+  ejecutar.bat manual
+  ```
+  *(O definir la variable `set MODO=MANUAL`)*.
+
+El lanzador omitirá el menú de terminal y ejecutará directamente `validar_input.js input.csv` y TagUI.
 
 ---
 
