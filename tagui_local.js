@@ -4,6 +4,22 @@
 // Compatible con motor ES5 de TagUI (PhantomJS / CasperJS / Node.js)
 // ==============================================================================
 
+// Polyfill para ES5 / PhantomJS / CasperJS que no soporta String.prototype.normalize
+if (typeof String.prototype.normalize !== 'function') {
+    String.prototype.normalize = function(form) {
+        var str = this;
+        var accents = {
+            'á':'a','é':'e','í':'i','ó':'o','ú':'u','ü':'u','ñ':'n',
+            'Á':'A','É':'E','Í':'I','Ó':'O','Ú':'U','Ü':'U','Ñ':'N',
+            'à':'a','è':'e','ì':'i','ò':'o','ù':'u',
+            'À':'A','È':'E','Ì':'I','Ò':'O','Ù':'U'
+        };
+        return str.replace(/[áéíóúüñÁÉÍÓÚÜÑàèìòùÀÈÌÒÙ]/g, function(c) {
+            return accents[c] || c;
+        });
+    };
+}
+
 // 1. FECHA ACTUAL LOCAL
 function getFechaActual() {
     var hoy = new Date();
@@ -231,7 +247,21 @@ function compararYOrdenar(resultados, solicitud) {
 // 10. POLÍTICA OBLIGATORIA DE ATRIBUTOS AUSENTES Y CONTRADICCIONES (REGLAS 1-16)
 function normalizarTexto(s) {
     if (!s && s !== 0) return '';
-    return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    var str = String(s);
+    if (typeof str.normalize === 'function') {
+        try {
+            return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+        } catch(e) {}
+    }
+    var accents = {
+        'á':'a','é':'e','í':'i','ó':'o','ú':'u','ü':'u','ñ':'n',
+        'Á':'A','É':'E','Í':'I','Ó':'O','Ú':'U','Ü':'U','Ñ':'N',
+        'à':'a','è':'e','ì':'i','ò':'o','ù':'u',
+        'À':'A','È':'E','Ì':'I','Ò':'O','Ù':'U'
+    };
+    return str.replace(/[áéíóúüñÁÉÍÓÚÜÑàèìòùÀÈÌÒÙ]/g, function(c) {
+        return accents[c] || c;
+    }).toLowerCase().trim();
 }
 
 function validarIdentidadPDP(productoCatalogo, datosPDP, catalogoCompleto) {
@@ -702,7 +732,7 @@ function detectarObstaculosDOM(supermercado, documentRef) {
     if (!doc) return { obstaculoDetectado: false, buscadorDisponible: false };
 
     function norm(s) {
-        return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+        return normalizarTexto(s);
     }
 
     // 1. Detección de banners de cookies inequívocos
