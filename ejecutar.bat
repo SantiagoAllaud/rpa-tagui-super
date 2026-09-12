@@ -16,7 +16,13 @@ for /f "tokens=5" %%a in ('netstat -aon ^| findstr :9222 ^| findstr LISTENING 2^
     taskkill /f /pid %%a >nul 2>&1
 )
 
-:: 2. Cerrar Excel en caso de que mantenga bloqueado resultados.csv
+:: 2. Cerrar procesos huerfanos que puedan bloquear archivos de log o TagUI
+taskkill /f /im php.exe >nul 2>&1
+taskkill /f /im tee.exe >nul 2>&1
+taskkill /f /im casperjs.exe >nul 2>&1
+taskkill /f /im phantomjs.exe >nul 2>&1
+
+:: 3. Cerrar Excel en caso de que mantenga bloqueado resultados.csv
 taskkill /f /im excel.exe >nul 2>&1
 
 :: 3. Validar disponibilidad de Node.js

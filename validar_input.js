@@ -12,6 +12,13 @@ const inputFile = process.argv[2] || path.join(__dirname, 'input.csv');
 const catalogFile = path.join(__dirname, 'catalogo', 'productos.json');
 const outputTaguiFile = path.join(__dirname, 'input_tagui.csv');
 
+// Eliminar preventivamente cualquier input_tagui.csv anterior para que nunca quede un archivo parcial o desactualizado
+if (fs.existsSync(outputTaguiFile)) {
+    try {
+        fs.unlinkSync(outputTaguiFile);
+    } catch (e) {}
+}
+
 function quitarAcentos(str) {
     return String(str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 }
@@ -115,7 +122,7 @@ for (let i = 1; i < lines.length; i++) {
         continue;
     }
 
-    // Buscar coincidencia en el catálogo
+    // Buscar coincidencia EXACTA en el catálogo
     const coincidencia = catalogo.find(item => {
         if (!item.activo) return false;
         const cProd = quitarAcentos(item.producto);
@@ -130,11 +137,43 @@ for (let i = 1; i < lines.length; i++) {
     });
 
     if (!coincidencia) {
-        console.error(`\x1b[31m[ERROR] Fila ${i}: No existe un producto con esa combinacion en el catalogo:`);
-        console.error(`        Producto: "${rawProd}" | Marca: "${rawMarca}" | Cantidad: "${rawCant}" | Unidad: "${rawUnidad}"`);
-        console.error(`        ¡No se permite comparar combinaciones inexistentes ni busquedas genericas!`);
-        console.error(`        Consulte el catalogo en catalogo/productos.json para ver las opciones validas.\x1b[0m`);
         hasError = true;
+        console.error(`\x1b[31m[ERROR] Fila ${i}: PRODUCTO NO REGISTRADO EN EL CATALOGO:`);
+        console.error(`        Solicitado -> Producto: "${rawProd}" | Marca: "${rawMarca}" | Cantidad: "${rawCant}" | Unidad: "${rawUnidad}"\x1b[0m`);
+
+        // Diagnóstico inteligente y sugerencia de alternativas válidas del catálogo
+        const coincidenciasProdMarca = catalogo.filter(item => {
+            if (!item.activo) return false;
+            const cProd = quitarAcentos(item.producto);
+            const cMarca = quitarAcentos(item.marca);
+            return (cProd === normProd || quitarAcentos(item.categoria) === normProd) && cMarca === normMarca;
+        });
+
+        if (coincidenciasProdMarca.length > 0) {
+            console.log(`\x1b[33m        -> Presentaciones validas para "${rawProd} ${rawMarca}":\x1b[0m`);
+            coincidenciasProdMarca.forEach(alt => {
+                console.log(`           * ${alt.producto} | ${alt.marca} | ${alt.cantidad} | ${alt.unidad}  (ID: ${alt.id_producto})`);
+            });
+        } else {
+            const coincidenciasProd = catalogo.filter(item => {
+                if (!item.activo) return false;
+                const cProd = quitarAcentos(item.producto);
+                return (cProd === normProd || quitarAcentos(item.categoria) === normProd);
+            });
+
+            if (coincidenciasProd.length > 0) {
+                console.log(`\x1b[33m        -> Marcas y presentaciones disponibles para "${rawProd}":\x1b[0m`);
+                coincidenciasProd.forEach(alt => {
+                    console.log(`           * ${alt.producto} | ${alt.marca} | ${alt.cantidad} | ${alt.unidad}  (ID: ${alt.id_producto})`);
+                });
+            } else {
+                const categoriasUnicas = [...new Set(catalogo.filter(p => p.activo).map(p => p.producto))];
+                console.log(`\x1b[33m        -> Productos/Categorias validas disponibles en catalogo:\x1b[0m`);
+                console.log(`           [ ${categoriasUnicas.join(', ')} ]`);
+                console.log(`           Consulte catalogo/productos.json para ver todas las opciones.`);
+            }
+        }
+        console.log('');
     } else {
         const carrefourRef = coincidencia.supermercados && coincidencia.supermercados.Carrefour;
         const cotoRef = coincidencia.supermercados && coincidencia.supermercados.COTO;
@@ -142,6 +181,8 @@ for (let i = 1; i < lines.length; i++) {
 
         console.log(`\x1b[32m[OK] Producto validado: ${coincidencia.producto} ${coincidencia.marca} ${coincidencia.presentacion} (ID: ${coincidencia.id_producto})\x1b[0m`);
         console.log(`     Disponibilidad en catalogo -> Carrefour: ${carrefourRef ? 'Si' : 'No'} | COTO: ${cotoRef ? 'Si' : 'No'} | Dia %: ${diaRef ? 'Si' : 'No'}`);
+
+        const justifEq = coincidencia.justificacion_equivalencia || '';
 
         productosValidados.push({
             id_producto: coincidencia.id_producto,
@@ -155,21 +196,23 @@ for (let i = 1; i < lines.length; i++) {
             coto_query: cotoRef ? (cotoRef.termino_busqueda || coincidencia.producto + ' ' + coincidencia.marca) : 'N/D',
             coto_url: cotoRef ? (cotoRef.url || '') : '',
             dia_query: diaRef ? (diaRef.termino_busqueda || coincidencia.producto + ' ' + coincidencia.marca) : 'N/D',
-            dia_url: diaRef ? (diaRef.url || '') : ''
+            dia_url: diaRef ? (diaRef.url || '') : '',
+            justificacion_equivalencia: justifEq
         });
     }
 }
 
 if (hasError) {
     console.log('=====================================================================');
-    console.error('\x1b[31m[ABORTADO] La validacion contra el catalogo fallo.\x1b[0m');
-    console.error('El robot RPA NO se iniciara hasta que se corrijan los productos en input.csv.');
+    console.error('\x1b[31m[ABORTADO] La validacion contra el catalogo fallo.');
+    console.error('Existe al menos una fila invalida. No se genero input_tagui.csv.');
+    console.error('El robot RPA NO se iniciara hasta que todos los productos sean validos.\x1b[0m');
     console.log('=====================================================================');
     process.exit(1);
 }
 
-// 4. Generar archivo de trabajo input_tagui.csv
-const taguiHeader = 'id_producto,producto,marca,cantidad,unidad,presentacion,carrefour_query,carrefour_url,coto_query,coto_url,dia_query,dia_url';
+// 4. Generar archivo de trabajo input_tagui.csv (solo si TODAS las filas son válidas)
+const taguiHeader = 'id_producto,producto,marca,cantidad,unidad,presentacion,carrefour_query,carrefour_url,coto_query,coto_url,dia_query,dia_url,justificacion_equivalencia';
 const taguiRows = productosValidados.map(p => {
     return [
         `"${p.id_producto}"`,
@@ -183,7 +226,8 @@ const taguiRows = productosValidados.map(p => {
         `"${p.coto_query}"`,
         `"${p.coto_url}"`,
         `"${p.dia_query}"`,
-        `"${p.dia_url}"`
+        `"${p.dia_url}"`,
+        `"${p.justificacion_equivalencia}"`
     ].join(',');
 });
 
@@ -191,7 +235,7 @@ fs.writeFileSync(outputTaguiFile, [taguiHeader, ...taguiRows].join('\r\n'), 'utf
 
 console.log('=====================================================================');
 console.log(`\x1b[32m[EXITO] Todos los productos fueron validados correctamente (${productosValidados.length} item/s).\x1b[0m`);
-console.log('Archivo input_tagui.csv generado con exito.');
-console.log('Iniciando automatizacion RPA TagUI con referencias directas...');
+console.log('Archivo input_tagui.csv generado con exito con referencias resueltas.');
+console.log('Iniciando automatizacion RPA TagUI...');
 console.log('=====================================================================');
 process.exit(0);
