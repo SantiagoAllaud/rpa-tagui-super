@@ -2,40 +2,35 @@
 // RPA Supermercados: Carrefour Argentina, COTO Digital y Día %
 // Materia: Tecnologías para la Automatización - UTN FRCU
 // Arquitectura: TagUI -> Google Chrome Visible -> DOM -> resultados.csv
-// Ejecución: tagui scraper_supermercados.tag input.csv
+// Ejecución: tagui scraper_supermercados.tag input_tagui.csv
 // ==============================================================================
 
 // 1. INICIALIZACIÓN EN LA PRIMERA ITERACIÓN
 if iteration equals to 1
     echo ============================================================
     echo INICIANDO AUTOMATIZACION RPA DE SUPERMERCADOS (MODO VISIBLE)
-    echo Leyendo lista de productos desde input.csv...
+    echo Leyendo referencias directas desde input_tagui.csv...
     echo ============================================================
-    // Inicializar cabeceras del archivo de persistencia local resultados.csv (13 columnas)
-    dump "Nombre","Precio","Supermercado","URL","Fecha","Estado","ProductoSolicitado","Marca","Cantidad","Unidad","Presentacion","PrecioNumerico","EsEquivalente" to resultados.csv
+    // Inicializar cabeceras del archivo de persistencia local resultados.csv (15 columnas)
+    dump "Nombre","Precio","Supermercado","URL","Fecha","Estado","ProductoSolicitado","Marca","Cantidad","Unidad","Presentacion","PrecioNumerico","Stock","Promocion","EsEquivalente" to resultados.csv
 
     echo -> Maximizando ventana de Google Chrome a pantalla completa...
     wait 2
     keyboard [f11]
     wait 2
 
-// 2. PREPARACIÓN Y PARSEO DINÁMICO DE LA SOLICITUD
+// 2. PREPARACIÓN DE LA SOLICITUD DETERMINÍSTICA
 fechaActual = getFechaActual()
-solicitudObj = parseSolicitud(producto)
-solTerm = obtenerTerminoBusqueda(solicitudObj)
-encodedProd = encodeSearchTerm(solTerm)
-solicitudAnclada = solicitudObj
+js solicitudObj = { id_producto: id_producto, producto: producto, marca: marca, cantidad: cantidad, unidad: unidad, presentacion: presentacion, raw: (producto + ' ' + marca + ' ' + presentacion) }
 
 echo 
 echo ============================================================
 echo RPA SUPERMERCADOS - ITERACION `iteration`
 echo ============================================================
-echo Solicitud: `producto`
-echo Producto base: `solicitudObj.producto`
-echo Cantidad requerida: `solicitudObj.cantidad`
-echo Unidad requerida: `solicitudObj.unidad`
-echo Marca requerida: `solicitudObj.marca`
-echo Presentacion requerida: `solicitudObj.presentacion`
+echo ID Catalogo: `id_producto`
+echo Producto: `producto`
+echo Marca: `marca`
+echo Presentacion: `presentacion`
 echo Fecha: `fechaActual`
 
 
@@ -44,45 +39,51 @@ echo Fecha: `fechaActual`
 // ==============================================================================
 echo 
 echo ------------------------------------------------------------
-echo [1/3] CARREFOUR ARGENTINA
+echo [1/3] CARREFOUR ARGENTINA - `producto` `marca` `presentacion`
 echo ------------------------------------------------------------
 carrefourResuelto = false
-carrefourCandidatos = []
-carrefourSel = null
+carrefourNombre = 'N/D'
+carrefourPrecio = 'N/D'
+carrefourStock = 'DISPONIBLE'
+carrefourPromo = 'Sin promocion'
+carrefourUrl = carrefour_url
 
-for intentoCarrefour from 1 to 3
+for intentoCarrefour from 1 to 2
     if carrefourResuelto equals to false
-        echo -> Intento `intentoCarrefour` de 3 en Carrefour...
+        echo -> Intento `intentoCarrefour` de 2 en Carrefour...
         if intentoCarrefour equals to 1
-            echo -> Abriendo supermercado Carrefour...
+            echo -> Abriendo portal de Carrefour Argentina...
             https://www.carrefour.com.ar/
             wait 3
-            echo -> Limpiando obstaculos, banners y modales...
+            echo -> Limpiando avisos, cookies y modales...
             dom (function(){ var sels = ['button[aria-label="Cerrar"]', '#onetrust-accept-btn-handler', 'button.close', '[class*="modal"] button']; for (var i=0; i<sels.length; i++) { var el = document.querySelector(sels[i]); if(el) try{el.click();}catch(e){} } })()
             
             xpCarrefourInput = '//input[contains(@placeholder, "buscar") or contains(@placeholder, "Buscar") or @type="search"]'
             if (present(xpCarrefourInput))
-                echo -> Buscador detectado. Posicionando cursor y escribiendo: `solTerm`
+                echo -> Buscador detectado. Escribiendo termino: `carrefour_query`
                 click `xpCarrefourInput`
                 wait 1
-                type `xpCarrefourInput` as [clear]`solTerm`
+                type `xpCarrefourInput` as [clear]`carrefour_query`
                 wait 2
-                echo -> Ejecutando busqueda interactiva en Carrefour...
+                echo -> Ejecutando busqueda visible en Carrefour...
                 type `xpCarrefourInput` as [enter]
                 wait 4
             else
-                echo -> Buscador interactivo no visible, navegando a resultados...
-                https://www.carrefour.com.ar/`encodedProd`?_q=`encodedProd`
+                echo -> Buscador interactivo no visible, abriendo catalogo...
+                targetCarrefourSearch = 'https://www.carrefour.com.ar/' + encodeSearchTerm(carrefour_query) + '?_q=' + encodeSearchTerm(carrefour_query)
+                targetCarrefourSearch = targetCarrefourSearch.replace(/^https?:\/\//, '')
+                https://`targetCarrefourSearch`
                 wait 4
         else
-            echo -> Reintentando navegacion directa en Carrefour...
-            https://www.carrefour.com.ar/`encodedProd`?_q=`encodedProd`
-            wait 5
-        
-        // Limpieza de modales y banners
+            echo -> Reintentando con navegacion a ficha de catalogo...
+            targetCarrefourSearch = carrefour_url.replace(/^https?:\/\//, '')
+            https://`targetCarrefourSearch`
+            wait 4
+
+        // Limpieza de modales
         dom (function(){ var sels = ['button[aria-label="Cerrar"]', '#onetrust-accept-btn-handler', 'button.close', '[class*="modal"] button']; for (var i=0; i<sels.length; i++) { var el = document.querySelector(sels[i]); if(el) try{el.click();}catch(e){} } })()
-        
-        // Ordenamiento por menor precio si el control está disponible
+
+        // Ordenamiento por menor precio si está en página de búsqueda
         xpCarrefourSortBtn = '//button[contains(@class, "orderByButton")]'
         if (present(xpCarrefourSortBtn))
             echo -> Control de ordenamiento detectado en Carrefour. Haciendo click...
@@ -104,56 +105,49 @@ for intentoCarrefour from 1 to 3
         echo -> Scrolleando catalogo hacia abajo (bloque 2)...
         dom window.scrollBy(0, 600);
         wait 2
-        echo -> Reubicando vista en los productos principales...
+        echo -> Reubicando vista en el producto seleccionado...
         dom window.scrollTo(0, 350);
         wait 1
 
-        // Extracción de candidatos desde el DOM (hasta 20)
-        echo -> Extrayendo candidatos desde el catalogo de Carrefour...
-        dom return (function() { var cards = document.querySelectorAll('article, div[class*="product-summary"], [class*="productCard"], [class*="product-card"]'); var list = []; for (var i = 0; i < Math.min(20, cards.length); i++) { var c = cards[i]; var titleEl = c.querySelector('h2, h3, [class*="productName"], [class*="productBrand"], [class*="brandName"]'); var priceText = 'N/D'; var sp = c.querySelector('[class*="sellingPrice"], [class*="currencyContainer"], [class*="price-best"]'); if (sp && sp.innerText && sp.innerText.indexOf('$') !== -1) { priceText = sp.innerText.trim(); } else { var all = c.querySelectorAll('*'); for (var j = 0; j < all.length; j++) { var t = (all[j].innerText || '').trim(); var m = t.match(/\$\s*[\d\.\,]+/); if (m && t.length < 30 && t.indexOf('%') === -1) { priceText = m[0]; break; } } } var linkEl = c.querySelector('a[href*="/p"]') || c.querySelector('a[href]'); if (titleEl && priceText !== 'N/D') { list.push({ nombre: titleEl.innerText.trim(), precio: priceText, url: linkEl ? linkEl.href : window.location.href }); } } return JSON.stringify(list); })()
-        
-        js carrefourCandidatos = JSON.parse(dom_result || '[]')
-        if carrefourCandidatos.length > 0
+        // Clic real en la tarjeta del producto
+        xpCarrefourCard = '(//article[contains(@class,"product")] | //div[contains(@class,"product-summary")] | //div[contains(@class,"productCard")])[1]//a'
+        if (present(xpCarrefourCard))
+            echo -> Haciendo click real en la tarjeta del producto en Carrefour...
+            click `xpCarrefourCard`
+            wait 3
+
+        // Si no entro a la ficha individual, navegar a la URL directa del catalogo
+        if (!present('//h1 | //span[contains(@class,"productName")]'))
+            if (carrefour_url != '')
+                echo -> Accediendo a la ficha individual de Carrefour via URL de catalogo...
+                targetCarrefourUrl = carrefour_url.replace(/^https?:\/\//, '')
+                https://`targetCarrefourUrl`
+                wait 3
+
+        // Permanencia visual pedagógica en la ficha individual
+        echo -> Ficha de producto en Carrefour visualizada en vivo (permanencia de confirmacion)...
+        wait 4
+
+        // Extracción de Precio, Stock y Promociones en la ficha
+        dom return (function() { var title = document.querySelector('h1, span[class*="productName"], [class*="product-name"]'); var price = document.querySelector('[class*="sellingPrice"], [class*="currencyContainer"], [class*="price-best"], [class*="price"]'); var stockBtn = document.querySelector('button[class*="add-to-cart"], button[class*="buy-button"], button[class*="comprar"]'); var agotadoTxt = document.body.innerText.match(/agotado|sin stock|no disponible/i); var promoBadge = document.querySelector('[class*="discount"], [class*="highlight"], [class*="badge"], [class*="promotion"]'); return JSON.stringify({ nombre: title ? title.innerText.trim() : '', precio: price ? price.innerText.trim() : 'N/D', stock: (stockBtn && !stockBtn.disabled && !agotadoTxt) ? 'DISPONIBLE' : (agotadoTxt ? 'AGOTADO' : 'DISPONIBLE'), promo: promoBadge ? promoBadge.innerText.trim() : 'Sin promocion', url: window.location.href }); })()
+
+        js carrefourData = JSON.parse(dom_result || '{}')
+        if (carrefourData.nombre != '' && carrefourData.precio != 'N/D')
+            carrefourNombre = carrefourData.nombre
+            carrefourPrecio = carrefourData.precio
+            carrefourStock = carrefourData.stock
+            carrefourPromo = carrefourData.promo
+            carrefourUrl = carrefourData.url
             carrefourResuelto = true
-            echo -> Candidatos obtenidos en Carrefour: `carrefourCandidatos.length`
+            echo -> Ficha verificada exitosamente en Carrefour: `carrefourNombre` (`carrefourPrecio`)
+            echo -> Stock: `carrefourStock` | Promocion: `carrefourPromo`
         else
-            echo -> Sin candidatos en Carrefour en intento `intentoCarrefour`
             wait 2
 
 if carrefourResuelto equals to true
-    js carrefourSel = seleccionarProductoCorrecto(carrefourCandidatos, solicitudObj)
+    js carrefourSel = crearResultadoExitoso("Carrefour", carrefourNombre, carrefourPrecio, carrefourUrl, carrefourStock, carrefourPromo, solicitudObj)
 else
-    js carrefourSel = crearResultadoError("Carrefour", "PRODUCTO_NO_ENCONTRADO", "No se obtuvieron candidatos tras 3 intentos", solicitudObj)
-
-js carrefourSel.supermercado = "Carrefour"
-js carrefourSel.url = formatUrl("https://www.carrefour.com.ar", carrefourSel.url)
-
-// Mostrar en pantalla el análisis detallado candidato por candidato
-echo `carrefourSel.analisisTexto`
-
-// Ingresar a la página individual del producto seleccionado mediante click real
-if carrefourSel.estado equals to 'OK'
-    echo -> Haciendo click real en la tarjeta del producto seleccionado en Carrefour...
-    targetCarrefourCard = '(//article[contains(@class,"product")] | //div[contains(@class,"product-summary")] | //div[contains(@class,"productCard")])[' + (carrefourSel.indiceCard + 1) + ']//a'
-    if (present(targetCarrefourCard))
-        click `targetCarrefourCard`
-        wait 3
-    
-    // Fallback por URL si el click no cambio la pagina
-    if (!present('//h1 | //span[contains(@class,"productName")]'))
-        targetCarrefourUrl = carrefourSel.url.replace(/^https?:\/\//, '')
-        https://`targetCarrefourUrl`
-        wait 3
-        
-    echo -> Ficha de producto visualizada en vivo (permanencia visual de confirmacion)...
-    wait 4
-    echo -> Ficha verificada exitosamente: `carrefourSel.nombre` (`carrefourSel.precio`)
-    wait 1
-
-// Crear solicitud anclada homogénea para COTO y Día si Carrefour obtuvo resultado válido
-js solicitudAnclada = crearSolicitudAnclada(solicitudObj, carrefourSel)
-if solicitudAnclada.esAnclado equals to true
-    echo -> Producto de referencia anclado: `solicitudAnclada.referenciaNombre` (Marca: `solicitudAnclada.marca`, Subtipo: `solicitudAnclada.subtipo`, `solicitudAnclada.presentacion`)
+    js carrefourSel = crearResultadoError("Carrefour", "PRODUCTO_NO_ENCONTRADO", "No se pudo extraer la ficha del producto en Carrefour", solicitudObj)
 
 
 // ==============================================================================
@@ -161,17 +155,20 @@ if solicitudAnclada.esAnclado equals to true
 // ==============================================================================
 echo 
 echo ------------------------------------------------------------
-echo [2/3] COTO DIGITAL
+echo [2/3] COTO DIGITAL - `producto` `marca` `presentacion`
 echo ------------------------------------------------------------
 cotoResuelto = false
-cotoCandidatos = []
-cotoSel = null
+cotoNombre = 'N/D'
+cotoPrecio = 'N/D'
+cotoStock = 'DISPONIBLE'
+cotoPromo = 'Sin promocion'
+cotoUrl = coto_url
 
-for intentoCoto from 1 to 3
+for intentoCoto from 1 to 2
     if cotoResuelto equals to false
-        echo -> Intento `intentoCoto` de 3 en COTO...
+        echo -> Intento `intentoCoto` de 2 en COTO...
         if intentoCoto equals to 1
-            echo -> Abriendo supermercado COTO...
+            echo -> Abriendo portal de COTO Digital...
             https://www.coto.com.ar/
             wait 3
             echo -> Limpiando avisos y modales...
@@ -179,39 +176,43 @@ for intentoCoto from 1 to 3
             
             xpCotoInput = '//input[contains(@class,"cio-input") or contains(@id,"cio-autocomplete")] | //input[contains(@placeholder, "comprar") or contains(@placeholder, "buscar")]'
             if (present(xpCotoInput))
-                echo -> Buscador detectado. Posicionando cursor y escribiendo: `solTerm`
+                echo -> Buscador de COTO detectado. Escribiendo termino: `coto_query`
                 click `xpCotoInput`
                 wait 1
-                type `xpCotoInput` as [clear]`solTerm`
+                type `xpCotoInput` as [clear]`coto_query`
                 wait 2
-                echo -> Sugerencias desplegadas. Haciendo click en boton de busqueda real...
-                xpCotoBtn = '//button[contains(@class,"cio-submit-btn") or @aria-label="Submit Search"]'
+                
+                xpCotoBtn = '//button[contains(@class,"cio-submit-btn")] | //button[contains(@class,"search-btn")] | //button[@type="submit"]'
                 if (present(xpCotoBtn))
+                    echo -> Haciendo click en el boton de busqueda de COTO...
                     click `xpCotoBtn`
                 else
                     type `xpCotoInput` as [enter]
-                wait 5
+                wait 4
             else
-                echo -> Buscador interactivo no visible, navegando a resultados...
-                https://www.coto.com.ar/productos/`encodedProd`
-                wait 5
+                echo -> Buscador interactivo de COTO no visible, abriendo catalogo...
+                targetCotoSearch = 'https://www.coto.com.ar/buscar?q=' + encodeSearchTerm(coto_query)
+                targetCotoSearch = targetCotoSearch.replace(/^https?:\/\//, '')
+                https://`targetCotoSearch`
+                wait 4
         else
-            echo -> Reintentando navegacion directa en COTO...
-            https://www.coto.com.ar/productos/`encodedProd`
-            wait 5
-            
+            echo -> Reintentando con navegacion a ficha de catalogo...
+            targetCotoSearch = coto_url.replace(/^https?:\/\//, '')
+            https://`targetCotoSearch`
+            wait 4
+
         // Limpieza de modales
         dom (function(){ var sels = ['button[aria-label="Cerrar"]', 'button.close', '[class*="modal"] button']; for (var i=0; i<sels.length; i++) { var el = document.querySelector(sels[i]); if(el) try{el.click();}catch(e){} } })()
-        
-        // Ordenamiento por menor precio si el select está disponible
-        xpCotoSort = '//select[contains(@class, "form-select")]'
-        if (present(xpCotoSort))
-            echo -> Control de ordenamiento detectado en COTO. Seleccionando menor precio...
-            select `xpCotoSort` as Precio: de menor a mayor
+
+        // Ordenamiento por menor precio si existe
+        xpCotoSortSelect = '//select[contains(@class, "form-select") or contains(@name, "sort")]'
+        if (present(xpCotoSortSelect))
+            echo -> Aplicando ordenamiento por menor precio en COTO...
+            select `xpCotoSortSelect` as Precio: de menor a mayor
             wait 3
 
         // Recorrido y scroll visual del catálogo
-        echo -> Recorriendo y scrolleando el catalogo visualmente...
+        echo -> Recorriendo y scrolleando el catalogo de COTO...
         dom window.scrollTo(0, 300);
         wait 2
         echo -> Scrolleando catalogo hacia abajo (bloque 1)...
@@ -220,117 +221,120 @@ for intentoCoto from 1 to 3
         echo -> Scrolleando catalogo hacia abajo (bloque 2)...
         dom window.scrollBy(0, 600);
         wait 2
-        echo -> Reubicando vista en los productos principales...
+        echo -> Reubicando vista en el producto seleccionado...
         dom window.scrollTo(0, 350);
         wait 1
 
-        // Extracción de candidatos desde el DOM (hasta 20)
-        echo -> Extrayendo candidatos desde el catalogo de COTO...
-        dom return (function() { var cards = document.querySelectorAll('.centro-precios, div[class*="product-item"], div[class*="card"]'); var list = []; for (var i = 0; i < Math.min(20, cards.length); i++) { var cp = cards[i]; var text = cp.innerText || ''; var lines = text.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; }); var priceMatch = text.match(/\$\s*[\d\.\,]+/); var linkEl = cp.querySelector('a[href]'); if (lines.length > 0 && priceMatch) { list.push({ nombre: lines[0], precio: priceMatch[0], url: linkEl ? linkEl.href : window.location.href }); } } return JSON.stringify(list); })()
-        
-        js cotoCandidatos = JSON.parse(dom_result || '[]')
-        if cotoCandidatos.length > 0
+        // Clic real en la tarjeta del producto
+        xpCotoCard = '(//div[contains(@class,"product-card")] | //article | //div[contains(@class,"card")])[1]//a'
+        if (present(xpCotoCard))
+            echo -> Haciendo click real en la tarjeta del producto en COTO...
+            click `xpCotoCard`
+            wait 3
+
+        // Si no entro a la ficha individual, navegar a la URL directa del catalogo
+        if (!present('//h1 | //span[contains(@class,"product-title")] | //div[contains(@class,"product-info")]'))
+            if (coto_url != '')
+                echo -> Accediendo a la ficha individual de COTO via URL de catalogo...
+                targetCotoUrl = coto_url.replace(/^https?:\/\//, '')
+                https://`targetCotoUrl`
+                wait 3
+
+        // Permanencia visual pedagógica en la ficha individual
+        echo -> Ficha de producto en COTO visualizada en vivo (permanencia de confirmacion)...
+        wait 4
+
+        // Extracción de Precio, Stock y Promociones en la ficha
+        dom return (function() { var title = document.querySelector('h1, [class*="product-title"], [class*="desc_prod"]'); var price = document.querySelector('[class*="price"], [class*="precio"], [class*="atg_store_newPrice"]'); var stockBtn = document.querySelector('button[class*="comprar"], button[class*="add-to-cart"], input[value*="Comprar"]'); var agotadoTxt = document.body.innerText.match(/agotado|sin stock|no disponible/i); var promoBadge = document.querySelector('[class*="descuento"], [class*="promo"], [class*="banner_oferta"]'); return JSON.stringify({ nombre: title ? title.innerText.trim() : '', precio: price ? price.innerText.trim() : 'N/D', stock: (stockBtn && !stockBtn.disabled && !agotadoTxt) ? 'DISPONIBLE' : (agotadoTxt ? 'AGOTADO' : 'DISPONIBLE'), promo: promoBadge ? promoBadge.innerText.trim() : 'Sin promocion', url: window.location.href }); })()
+
+        js cotoData = JSON.parse(dom_result || '{}')
+        if (cotoData.nombre != '' && cotoData.precio != 'N/D')
+            cotoNombre = cotoData.nombre
+            cotoPrecio = cotoData.precio
+            cotoStock = cotoData.stock
+            cotoPromo = cotoData.promo
+            cotoUrl = cotoData.url
             cotoResuelto = true
-            echo -> Candidatos obtenidos en COTO: `cotoCandidatos.length`
+            echo -> Ficha verificada exitosamente en COTO: `cotoNombre` (`cotoPrecio`)
+            echo -> Stock: `cotoStock` | Promocion: `cotoPromo`
         else
-            echo -> Sin candidatos en COTO en intento `intentoCoto`
             wait 2
 
 if cotoResuelto equals to true
-    js cotoSel = seleccionarProductoCorrecto(cotoCandidatos, solicitudAnclada)
+    js cotoSel = crearResultadoExitoso("COTO", cotoNombre, cotoPrecio, cotoUrl, cotoStock, cotoPromo, solicitudObj)
 else
-    js cotoSel = crearResultadoError("COTO", "PRODUCTO_NO_ENCONTRADO", "No se obtuvieron candidatos tras 3 intentos", solicitudAnclada)
-
-js cotoSel.supermercado = "COTO"
-js cotoSel.url = formatUrl("https://www.coto.com.ar/productos/" + encodedProd, cotoSel.url)
-
-// Mostrar en pantalla el análisis detallado candidato por candidato
-echo `cotoSel.analisisTexto`
-
-// Ingresar a la página individual del producto seleccionado mediante click real
-if cotoSel.estado equals to 'OK'
-    echo -> Haciendo click real en la tarjeta del producto seleccionado en COTO...
-    targetCotoCard = '(//div[contains(@class,"centro-precios")] | //div[contains(@class,"product-item")] | //div[contains(@class,"card")])[' + (cotoSel.indiceCard + 1) + ']//a'
-    if (present(targetCotoCard))
-        click `targetCotoCard`
-        wait 3
-        
-    if (!present('//h1 | //span[contains(@class,"product-title")]'))
-        targetCotoUrl = cotoSel.url.replace(/^https?:\/\//, '')
-        https://`targetCotoUrl`
-        wait 3
-        
-    echo -> Ficha de producto visualizada en vivo (permanencia visual de confirmacion)...
-    wait 4
-    echo -> Ficha verificada exitosamente: `cotoSel.nombre` (`cotoSel.precio`)
-    wait 1
+    js cotoSel = crearResultadoError("COTO", "PRODUCTO_NO_ENCONTRADO", "No se pudo extraer la ficha del producto en COTO", solicitudObj)
 
 
 // ==============================================================================
-// [3/3] SUPERMERCADOS DIA %
+// [3/3] SUPERMERCADOS DÍA %
 // ==============================================================================
 echo 
 echo ------------------------------------------------------------
-echo [3/3] SUPERMERCADOS DÍA %
+echo [3/3] SUPERMERCADOS DIA % - `producto` `marca` `presentacion`
 echo ------------------------------------------------------------
 diaResuelto = false
-diaCandidatos = []
-diaSel = null
+diaNombre = 'N/D'
+diaPrecio = 'N/D'
+diaStock = 'DISPONIBLE'
+diaPromo = 'Sin promocion'
+diaUrl = dia_url
 
-for intentoDia from 1 to 3
+for intentoDia from 1 to 2
     if diaResuelto equals to false
-        echo -> Intento `intentoDia` de 3 en Día %...
+        echo -> Intento `intentoDia` de 2 en Día %...
         if intentoDia equals to 1
-            echo -> Abriendo supermercado Día %...
+            echo -> Abriendo portal de Supermercados Día %...
             https://diaonline.supermercadosdia.com.ar/
             wait 3
-            echo -> Limpiando avisos y modal de codigo postal...
+            echo -> Limpiando avisos y modales...
             dom (function(){ var sels = ['button[aria-label="Cerrar"]', 'button.close', '[class*="modal"] button']; for (var i=0; i<sels.length; i++) { var el = document.querySelector(sels[i]); if(el) try{el.click();}catch(e){} } })()
             
-            xpDiaInput = '//input[contains(@id, "downshift-") or contains(@placeholder, "buscar") or contains(@placeholder, "Buscar") or @type="search"]'
+            xpDiaInput = '//input[contains(@placeholder, "buscar") or contains(@placeholder, "Buscar")]'
             if (present(xpDiaInput))
-                echo -> Buscador detectado. Posicionando cursor y escribiendo: `solTerm`
+                echo -> Buscador de Día % detectado. Escribiendo termino: `dia_query`
                 click `xpDiaInput`
                 wait 1
-                type `xpDiaInput` as [clear]`solTerm`
+                type `xpDiaInput` as [clear]`dia_query`
                 wait 2
-                echo -> Autocomplete desplegado. Transicionando al listado completo de resultados...
-                xpDiaVerTodos = '//section[contains(@class,"biggy-autocomplete")]//a[contains(text(),"Ver todos") or contains(@href,"_q=")]'
-                xpDiaLupa = '//button[contains(@class,"vtex-store-components-3-x-searchBarIcon--search") or @aria-label="Buscar Productos"]'
+                
+                xpDiaVerTodos = '//a[contains(text(), "Ver todos") or contains(text(), "ver todos")]'
                 if (present(xpDiaVerTodos))
+                    echo -> Haciendo click en Ver todos los resultados...
                     click `xpDiaVerTodos`
+                    wait 4
                 else
-                    if (present(xpDiaLupa))
-                        click `xpDiaLupa`
-                    else
-                        type `xpDiaInput` as [enter]
-                wait 5
+                    type `xpDiaInput` as [enter]
+                    wait 4
             else
-                echo -> Buscador interactivo no visible, navegando a resultados...
-                https://diaonline.supermercadosdia.com.ar/`encodedProd`?_q=`encodedProd`
-                wait 5
+                echo -> Buscador interactivo de Día % no visible, abriendo catalogo...
+                targetDiaSearch = 'https://diaonline.supermercadosdia.com.ar/' + encodeSearchTerm(dia_query) + '?_q=' + encodeSearchTerm(dia_query)
+                targetDiaSearch = targetDiaSearch.replace(/^https?:\/\//, '')
+                https://`targetDiaSearch`
+                wait 4
         else
-            echo -> Reintentando navegacion directa en Día %...
-            https://diaonline.supermercadosdia.com.ar/`encodedProd`?_q=`encodedProd`
-            wait 5
-            
+            echo -> Reintentando con navegacion a ficha de catalogo...
+            targetDiaSearch = dia_url.replace(/^https?:\/\//, '')
+            https://`targetDiaSearch`
+            wait 4
+
         // Limpieza de modales
         dom (function(){ var sels = ['button[aria-label="Cerrar"]', 'button.close', '[class*="modal"] button']; for (var i=0; i<sels.length; i++) { var el = document.querySelector(sels[i]); if(el) try{el.click();}catch(e){} } })()
-        
-        // Ordenamiento por menor precio si el botón está disponible
+
+        // Ordenamiento por menor precio si está en galería
         xpDiaSortBtn = '//button[contains(@class, "orderByButton")]'
         if (present(xpDiaSortBtn))
-            echo -> Control de ordenamiento detectado en Dia %. Haciendo click...
+            echo -> Control de ordenamiento detectado en Día %. Haciendo click...
             click `xpDiaSortBtn`
             wait 1
-            xpDiaSortOpt = '//button[contains(text(), "Precios más bajo") or contains(text(), "menor precio")]'
+            xpDiaSortOpt = '//button[contains(text(), "Precios más bajo") or contains(text(), "más bajo") or contains(text(), "menor precio")]'
             if (present(xpDiaSortOpt))
-                echo -> Aplicando ordenamiento: Precios mas bajo...
+                echo -> Aplicando ordenamiento por menor precio en Día %...
                 click `xpDiaSortOpt`
                 wait 3
 
         // Recorrido y scroll visual del catálogo
-        echo -> Recorriendo y scrolleando el catalogo visualmente...
+        echo -> Recorriendo y scrolleando el catalogo de Día %...
         dom window.scrollTo(0, 300);
         wait 2
         echo -> Scrolleando catalogo hacia abajo (bloque 1)...
@@ -339,61 +343,59 @@ for intentoDia from 1 to 3
         echo -> Scrolleando catalogo hacia abajo (bloque 2)...
         dom window.scrollBy(0, 600);
         wait 2
-        echo -> Reubicando vista en los productos principales...
+        echo -> Reubicando vista en el producto seleccionado...
         dom window.scrollTo(0, 350);
         wait 1
 
-        // Extracción de candidatos desde el DOM (hasta 20)
-        echo -> Extrayendo candidatos desde el catalogo de Día %...
-        dom return (function() { var cards = document.querySelectorAll('section article, div[class*="product-summary"], article[class*="product"], [class*="productCard"]'); var list = []; for (var i = 0; i < Math.min(20, cards.length); i++) { var c = cards[i]; var titleEl = c.querySelector('span[class*="productBrand"], [class*="productName"], h3, h2, [class*="brandName"]'); var priceText = 'N/D'; var sp = c.querySelector('[class*="sellingPrice"], [class*="currencyContainer"]'); if (sp && sp.innerText && sp.innerText.indexOf('$') !== -1 && sp.innerText.indexOf('%') === -1) { priceText = sp.innerText.trim(); } else { var all = c.querySelectorAll('*'); for (var j = 0; j < all.length; j++) { var t = (all[j].innerText || '').trim(); var m = t.match(/\$\s*[\d\.\,]+/); if (m && t.length < 30 && t.indexOf('%') === -1) { priceText = m[0]; break; } } } var linkEl = c.querySelector('a[href*="/p"]') || c.querySelector('a[href]'); if (titleEl && priceText !== 'N/D') { list.push({ nombre: titleEl.innerText.trim(), precio: priceText, url: linkEl ? linkEl.href : window.location.href }); } } return JSON.stringify(list); })()
-        
-        js diaCandidatos = JSON.parse(dom_result || '[]')
-        if diaCandidatos.length > 0
+        // Clic real en la tarjeta del producto
+        xpDiaCard = '(//section//article | //div[contains(@class,"product-summary")] | //article[contains(@class,"product")])[1]//a'
+        if (present(xpDiaCard))
+            echo -> Haciendo click real en la tarjeta del producto en Día %...
+            click `xpDiaCard`
+            wait 3
+
+        // Si no entro a la ficha individual, navegar a la URL directa del catalogo
+        if (!present('//h1 | //span[contains(@class,"productName")]'))
+            if (dia_url != '')
+                echo -> Accediendo a la ficha individual de Día % via URL de catalogo...
+                targetDiaUrl = dia_url.replace(/^https?:\/\//, '')
+                https://`targetDiaUrl`
+                wait 3
+
+        // Permanencia visual pedagógica en la ficha individual
+        echo -> Ficha de producto en Día % visualizada en vivo (permanencia de confirmacion)...
+        wait 4
+
+        // Extracción de Precio, Stock y Promociones en la ficha
+        dom return (function() { var title = document.querySelector('h1, span[class*="productName"], [class*="product-name"]'); var price = document.querySelector('[class*="sellingPrice"], [class*="currencyContainer"], [class*="price-best"]'); var stockBtn = document.querySelector('button[class*="add-to-cart"], button[class*="buy-button"]'); var agotadoTxt = document.body.innerText.match(/agotado|sin stock|no disponible/i); var promoBadge = document.querySelector('[class*="discount"], [class*="highlight"], [class*="badge"], [class*="promotion"]'); return JSON.stringify({ nombre: title ? title.innerText.trim() : '', precio: price ? price.innerText.trim() : 'N/D', stock: (stockBtn && !stockBtn.disabled && !agotadoTxt) ? 'DISPONIBLE' : (agotadoTxt ? 'AGOTADO' : 'DISPONIBLE'), promo: promoBadge ? promoBadge.innerText.trim() : 'Sin promocion', url: window.location.href }); })()
+
+        js diaData = JSON.parse(dom_result || '{}')
+        if (diaData.nombre != '' && diaData.precio != 'N/D')
+            diaNombre = diaData.nombre
+            diaPrecio = diaData.precio
+            diaStock = diaData.stock
+            diaPromo = diaData.promo
+            diaUrl = diaData.url
             diaResuelto = true
-            echo -> Candidatos obtenidos en Día %: `diaCandidatos.length`
+            echo -> Ficha verificada exitosamente en Día %: `diaNombre` (`diaPrecio`)
+            echo -> Stock: `diaStock` | Promocion: `diaPromo`
         else
-            echo -> Sin candidatos en Día % en intento `intentoDia`
             wait 2
 
 if diaResuelto equals to true
-    js diaSel = seleccionarProductoCorrecto(diaCandidatos, solicitudAnclada)
+    js diaSel = crearResultadoExitoso("Día %", diaNombre, diaPrecio, diaUrl, diaStock, diaPromo, solicitudObj)
 else
-    js diaSel = crearResultadoError("Día %", "PRODUCTO_NO_ENCONTRADO", "No se obtuvieron candidatos tras 3 intentos", solicitudAnclada)
-
-js diaSel.supermercado = "Día %"
-js diaSel.url = formatUrl("https://diaonline.supermercadosdia.com.ar", diaSel.url)
-
-// Mostrar en pantalla el análisis detallado candidato por candidato
-echo `diaSel.analisisTexto`
-
-// Ingresar a la página individual del producto seleccionado mediante click real
-if diaSel.estado equals to 'OK'
-    echo -> Haciendo click real en la tarjeta del producto seleccionado en Dia %...
-    targetDiaCard = '(//section//article | //div[contains(@class,"product-summary")] | //article[contains(@class,"product")])[' + (diaSel.indiceCard + 1) + ']//a'
-    if (present(targetDiaCard))
-        click `targetDiaCard`
-        wait 3
-        
-    if (!present('//h1 | //span[contains(@class,"productName")]'))
-        targetDiaUrl = diaSel.url.replace(/^https?:\/\//, '')
-        https://`targetDiaUrl`
-        wait 3
-        
-    echo -> Ficha de producto visualizada en vivo (permanencia visual de confirmacion)...
-    wait 4
-    echo -> Ficha verificada exitosamente: `diaSel.nombre` (`diaSel.precio`)
-    wait 1
+    js diaSel = crearResultadoError("Día %", "PRODUCTO_NO_ENCONTRADO", "No se pudo extraer la ficha del producto en Día %", solicitudObj)
 
 
 // ==============================================================================
-// COMPARACIÓN FINAL Y PERSISTENCIA
+// COMPARACIÓN FINAL Y PERSISTENCIA (15 COLUMNAS CON STOCK Y PROMOCIÓN)
 // ==============================================================================
 js comparacion = compararYOrdenar([carrefourSel, cotoSel, diaSel], solicitudObj)
 
-// Persistencia en resultados.csv con esquema completo de 13 columnas
-write "`cleanCsv(carrefourSel.nombre)`","`cleanPrice(carrefourSel.precio)`","Carrefour","`carrefourSel.url`","`fechaActual`","`carrefourSel.estado`","`cleanCsv(solicitudObj.raw)`","`cleanCsv(carrefourSel.marca)`","`carrefourSel.cantidad`","`carrefourSel.unidad`","`carrefourSel.presentacion`","`carrefourSel.precioNumerico`","`carrefourSel.esEquivalente`" to resultados.csv
-write "`cleanCsv(cotoSel.nombre)`","`cleanPrice(cotoSel.precio)`","COTO","`cotoSel.url`","`fechaActual`","`cotoSel.estado`","`cleanCsv(solicitudObj.raw)`","`cleanCsv(cotoSel.marca)`","`cotoSel.cantidad`","`cotoSel.unidad`","`cotoSel.presentacion`","`cotoSel.precioNumerico`","`cotoSel.esEquivalente`" to resultados.csv
-write "`cleanCsv(diaSel.nombre)`","`cleanPrice(diaSel.precio)`","Día %","`diaSel.url`","`fechaActual`","`diaSel.estado`","`cleanCsv(solicitudObj.raw)`","`cleanCsv(diaSel.marca)`","`diaSel.cantidad`","`diaSel.unidad`","`diaSel.presentacion`","`diaSel.precioNumerico`","`diaSel.esEquivalente`" to resultados.csv
+write "`cleanCsv(carrefourSel.nombre)`","`cleanPrice(carrefourSel.precio)`","Carrefour","`carrefourSel.url`","`fechaActual`","`carrefourSel.estado`","`cleanCsv(solicitudObj.raw)`","`cleanCsv(carrefourSel.marca)`","`carrefourSel.cantidad`","`carrefourSel.unidad`","`carrefourSel.presentacion`","`carrefourSel.precioNumerico`","`cleanCsv(carrefourSel.stock)`","`cleanCsv(carrefourSel.promocion)`","`carrefourSel.esEquivalente`" to resultados.csv
+write "`cleanCsv(cotoSel.nombre)`","`cleanPrice(cotoSel.precio)`","COTO","`cotoSel.url`","`fechaActual`","`cotoSel.estado`","`cleanCsv(solicitudObj.raw)`","`cleanCsv(cotoSel.marca)`","`cotoSel.cantidad`","`cotoSel.unidad`","`cotoSel.presentacion`","`cotoSel.precioNumerico`","`cleanCsv(cotoSel.stock)`","`cleanCsv(cotoSel.promocion)`","`cotoSel.esEquivalente`" to resultados.csv
+write "`cleanCsv(diaSel.nombre)`","`cleanPrice(diaSel.precio)`","Día %","`diaSel.url`","`fechaActual`","`diaSel.estado`","`cleanCsv(solicitudObj.raw)`","`cleanCsv(diaSel.marca)`","`diaSel.cantidad`","`diaSel.unidad`","`diaSel.presentacion`","`diaSel.precioNumerico`","`cleanCsv(diaSel.stock)`","`cleanCsv(diaSel.promocion)`","`diaSel.esEquivalente`" to resultados.csv
 
-echo [OK] Persistidos resultados para "`producto`" en resultados.csv
+echo [OK] Resultados guardados en resultados.csv para `producto` `marca` `presentacion`
 echo 

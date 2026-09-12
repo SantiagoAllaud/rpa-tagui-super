@@ -1,0 +1,274 @@
+[
+  {
+    "id_producto": "GAL_OREO_117G",
+    "categoria": "Galletitas",
+    "producto": "Galletitas",
+    "marca": "Oreo",
+    "cantidad": 117,
+    "unidad": "g",
+    "presentacion": "117g",
+    "ean": "7622210819124",
+    "activo": true,
+    "supermercados": {
+      "Carrefour": {
+        "sku": "697155",
+        "ean": "7622210819124",
+        "url": "https://www.carrefour.com.ar/galletitas-rellenas-de-vainilla-oreo-117-g-697155/p",
+        "nombre_original": "Galletitas Rellenas de Vainilla Oreo 117 g",
+        "termino_busqueda": "Oreo 117g"
+      },
+      "COTO": {
+        "sku": "512340",
+        "ean": "7622210819124",
+        "url": "https://www.coto.com.ar/productos/galletitas-oreo-117-g-/_/R-00512340-00512340-200",
+        "nombre_original": "Galletitas Dulces Rellenas OREO 117 Gr",
+        "termino_busqueda": "Oreo 117g"
+      },
+      "Dia": {
+        "sku": "69715",
+        "ean": "7622210819124",
+        "url": "https://diaonline.supermercadosdia.com.ar/galletitas-rellenas-oreo-117-gr-69715/p",
+        "nombre_original": "Galletitas Rellenas Chocolate Oreo 117 Gr.",
+        "termino_busqueda": "Oreo 117g"
+      }
+    }
+  },
+  {
+    "id_producto": "GAL_OREO_154G",
+    "categoria": "Galletitas",
+    "producto": "Galletitas",
+    "marca": "Oreo",
+    "cantidad": 154,
+    "unidad": "g",
+    "presentacion": "154g",
+    "ean": "7622210819131",
+    "activo": true,
+    "supermercados": {
+      "Carrefour": {
+        "sku": "697156",
+        "ean": "7622210819131",
+        "url": "https://www.carrefour.com.ar/galletitas-rellenas-de-vainilla-oreo-154-g/p",
+        "nombre_original": "Galletitas Rellenas de Vainilla Oreo 154 g",
+        "termino_busqueda": "Oreo 154g"
+      },
+      "COTO": {
+        "sku": "512341",
+        "ean": "7622210819131",
+        "url": "https://www.coto.com.ar/productos/galletitas-oreo-154-g-/_/R-00512341-00512341-200",
+        "nombre_original": "Galletitas Dulces Rellenas OREO 154 Gr",
+        "termino_busqueda": "Oreo 154g"
+      },
+      "Dia": {
+        "sku": "69716",
+        "ean": "7622210819131",
+        "url": "https://diaonline.supermercadosdia.com.ar/galletitas-rellenas-oreo-154-gr/p",
+        "nombre_original": "Galletitas Rellenas Chocolate Oreo 154 Gr.",
+        "termino_busqueda": "Oreo 154g"
+      }
+    }
+  },
+  {
+    "id_producto": "LEC_LASERENISIMA_1L",
+    "categoria": "Lácteos",
+    "producto": "Leche",
+    "marca": "La Serenisima",
+    "cantidad": 1,
+    "unidad": "L",
+    "presentacion": "1L",
+    "ean": "7790036001234",
+    "activo": true,
+    "supermercados": {
+      "Carrefour": {
+        "sku": "654120",
+        "ean": "7790036001234",
+        "url": "https://www.carrefour.com.ar/leche-entera-clasica-la-serenisima-1-l/p",
+        "nombre_original": "Leche Entera Clasica La Serenisima 1 L",
+        "termino_busqueda": "Leche La Serenisima 1L"
+      },
+      "COTO": {
+        "sku": "511510",
+        "ean": "7790036001234",
+        "url": "https://www.coto.com.ar/productos/leche-multidefensas-3-la-serenisima-sachet-1l-/_/R-00511510-00511510-200",
+        "nombre_original": "Leche Multidefensas 3% LA SERENISIMA Sachet 1l",
+        "termino_busqueda": "Leche La Serenisima 1L"
+      },
+      "Dia": {
+        "sku": "74125",
+        "ean": "7790036001234",
+        "url": "https://diaonline.supermercadosdia.com.ar/leche-la-serenisima-entera-1-lt/p",
+        "nombre_original": "Leche Entera La Serenisima Larga Vida 1 Lt.",
+        "termino_busqueda": "Leche La Serenisima 1L"
+      }
+    }
+  },
+  {
+    "id_producto": "YER_PLAYADITO_1KG",
+    "categoria": "Almacén",
+    "producto": "Yerba",
+    "marca": "Playadito",
+    "cantidad": 1,
+    "unidad": "kg",
+    "presentacion": "1kg",
+    "ean": "7790930000108",
+    "activo": true,
+    "supermercados": {
+      "Carrefour": {
+        "sku": "112340",
+        "ean": "7790930000108",
+        "url": "https://www.carrefour.com.ar/yerba-mate-playadito-con-palo-1-kg/p",
+        "nombre_original": "Yerba Mate Playadito Con Palo 1 Kg",
+        "termino_busqueda": "Yerba Playadito 1kg"
+      },
+      "COTO": {
+        "sku": "205120",
+        "ean": "7790930000108",
+        "url": "https://www.coto.com.ar/productos/yerba-mate-playadito-con-palo-1-kg-/_/R-00205120-00205120-200",
+        "nombre_original": "Yerba Mate PLAYADITO Con Palo Paquete 1 Kg",
+        "termino_busqueda": "Yerba Playadito 1kg"
+      },
+      "Dia": {
+        "sku": "85210",
+        "ean": "7790930000108",
+        "url": "https://diaonline.supermercadosdia.com.ar/yerba-mate-con-palo-playadito-1-kg/p",
+        "nombre_original": "Yerba Mate con Palo Playadito 1 Kg.",
+        "termino_busqueda": "Yerba Playadito 1kg"
+      }
+    }
+  },
+  {
+    "id_producto": "ACE_NATURA_900ML",
+    "categoria": "Almacén",
+    "producto": "Aceite",
+    "marca": "Natura",
+    "cantidad": 900,
+    "unidad": "ml",
+    "presentacion": "900ml",
+    "ean": "7790070001018",
+    "activo": true,
+    "supermercados": {
+      "Carrefour": {
+        "sku": "320145",
+        "ean": "7790070001018",
+        "url": "https://www.carrefour.com.ar/aceite-de-girasol-natura-900-ml/p",
+        "nombre_original": "Aceite De Girasol Natura 900 Ml",
+        "termino_busqueda": "Aceite Natura 900ml"
+      },
+      "COTO": {
+        "sku": "114520",
+        "ean": "7790070001018",
+        "url": "https://www.coto.com.ar/productos/aceite-de-girasol-natura-botella-900-ml-/_/R-00114520-00114520-200",
+        "nombre_original": "Aceite de Girasol NATURA Botella 900 Ml",
+        "termino_busqueda": "Aceite Natura 900ml"
+      },
+      "Dia": {
+        "sku": "96320",
+        "ean": "7790070001018",
+        "url": "https://diaonline.supermercadosdia.com.ar/aceite-de-girasol-natura-900-ml/p",
+        "nombre_original": "Aceite de Girasol Natura Botella 900 Ml.",
+        "termino_busqueda": "Aceite Natura 900ml"
+      }
+    }
+  },
+  {
+    "id_producto": "FID_MATARAZZO_500G",
+    "categoria": "Almacén",
+    "producto": "Fideos",
+    "marca": "Matarazzo",
+    "cantidad": 500,
+    "unidad": "g",
+    "presentacion": "500g",
+    "ean": "7790070411015",
+    "activo": true,
+    "supermercados": {
+      "Carrefour": {
+        "sku": "412580",
+        "ean": "7790070411015",
+        "url": "https://www.carrefour.com.ar/fideos-spaghetti-matarazzo-500-g/p",
+        "nombre_original": "Fideos Spaghetti Matarazzo 500 G",
+        "termino_busqueda": "Fideos Matarazzo 500g"
+      },
+      "COTO": {
+        "sku": "189420",
+        "ean": "7790070411015",
+        "url": "https://www.coto.com.ar/productos/fideos-tallarines-matarazzo-500-g-/_/R-00189420-00189420-200",
+        "nombre_original": "Fideos Tallarines MATARAZZO Paquete 500 Gr",
+        "termino_busqueda": "Fideos Matarazzo 500g"
+      },
+      "Dia": {
+        "sku": "65890",
+        "ean": "7790070411015",
+        "url": "https://diaonline.supermercadosdia.com.ar/fideos-spaghetti-matarazzo-500-gr/p",
+        "nombre_original": "Fideos Spaghetti Matarazzo Paquete 500 Gr.",
+        "termino_busqueda": "Fideos Matarazzo 500g"
+      }
+    }
+  },
+  {
+    "id_producto": "ARR_GALLO_1KG",
+    "categoria": "Almacén",
+    "producto": "Arroz",
+    "marca": "Gallo",
+    "cantidad": 1,
+    "unidad": "kg",
+    "presentacion": "1kg",
+    "ean": "7790070112011",
+    "activo": true,
+    "supermercados": {
+      "Carrefour": {
+        "sku": "236540",
+        "ean": "7790070112011",
+        "url": "https://www.carrefour.com.ar/arroz-parboil-oro-gallo-1-kg/p",
+        "nombre_original": "Arroz Parboil Oro Gallo 1 Kg",
+        "termino_busqueda": "Arroz Gallo Oro 1kg"
+      },
+      "COTO": {
+        "sku": "210450",
+        "ean": "7790070112011",
+        "url": "https://www.coto.com.ar/productos/arroz-parboil-oro-gallo-1-kg-/_/R-00210450-00210450-200",
+        "nombre_original": "Arroz Parboil Oro GALLO Caja 1 Kg",
+        "termino_busqueda": "Arroz Gallo 1kg"
+      },
+      "Dia": {
+        "sku": "45210",
+        "ean": "7790070112011",
+        "url": "https://diaonline.supermercadosdia.com.ar/arroz-parboil-oro-gallo-1-kg/p",
+        "nombre_original": "Arroz Oro Parboil Gallo 1 Kg.",
+        "termino_busqueda": "Arroz Gallo 1kg"
+      }
+    }
+  },
+  {
+    "id_producto": "GAS_COCACOLA_1.5L",
+    "categoria": "Bebidas",
+    "producto": "Gaseosa",
+    "marca": "Coca-Cola",
+    "cantidad": 1.5,
+    "unidad": "L",
+    "presentacion": "1.5L",
+    "ean": "7790895000450",
+    "activo": true,
+    "supermercados": {
+      "Carrefour": {
+        "sku": "158940",
+        "ean": "7790895000450",
+        "url": "https://www.carrefour.com.ar/gaseosa-coca-cola-sabor-original-15-l/p",
+        "nombre_original": "Gaseosa Coca-Cola Sabor Original 1.5 L",
+        "termino_busqueda": "Coca-Cola 1.5L"
+      },
+      "COTO": {
+        "sku": "320140",
+        "ean": "7790895000450",
+        "url": "https://www.coto.com.ar/productos/gaseosa-coca-cola-sabor-original-botella-15-l-/_/R-00320140-00320140-200",
+        "nombre_original": "Gaseosa COCA COLA Sabor Original Botella 1.5 L",
+        "termino_busqueda": "Coca-Cola 1.5L"
+      },
+      "Dia": {
+        "sku": "36980",
+        "ean": "7790895000450",
+        "url": "https://diaonline.supermercadosdia.com.ar/gaseosa-coca-cola-original-15-lt/p",
+        "nombre_original": "Gaseosa Coca-Cola Sabor Original 1.5 Lt.",
+        "termino_busqueda": "Coca-Cola 1.5L"
+      }
+    }
+  }
+]

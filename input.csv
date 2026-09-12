@@ -1,6 +1,6 @@
-producto
-leche 1L
-arroz 500g
-fideos 500g
-yerba mate 1kg
-aceite 900ml
+producto,marca,cantidad,unidad
+Galletitas,Oreo,117,g
+Leche,La Serenisima,1,L
+Yerba,Playadito,1,kg
+Aceite,Natura,900,ml
+Fideos,Matarazzo,500,g

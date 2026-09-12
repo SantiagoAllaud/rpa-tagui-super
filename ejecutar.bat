@@ -6,18 +6,30 @@ color 0b
 
 echo =====================================================================
 echo       RPA TAGUI - COMPARADOR DE SUPERMERCADOS (UTN FRCU)
-echo   Sitios consultados: Carrefour Argentina, COTO Digital, Dia
+echo   Sitios consultados: Carrefour Argentina, COTO Digital, Dia %%
+echo   Arquitectura: Catalogo Local Previsto + TagUI Determinico en Vivo
 echo =====================================================================
 echo(
 
-:: Liberar puerto de depuracion 9222 en caso de instancias huerfanas de Chrome
+:: 1. Liberar puerto de depuracion 9222 en caso de instancias huerfanas de Chrome
 for /f "tokens=5" %%a in ('netstat -aon ^| findstr :9222 ^| findstr LISTENING 2^>nul') do (
     taskkill /f /pid %%a >nul 2>&1
 )
 
-:: Cerrar Excel en caso de que mantenga bloqueado resultados.csv
+:: 2. Cerrar Excel en caso de que mantenga bloqueado resultados.csv
 taskkill /f /im excel.exe >nul 2>&1
 
+:: 3. Validar disponibilidad de Node.js
+where node >nul 2>&1
+if errorlevel 1 (
+    color 0c
+    echo [ERROR] No se encontro Node.js en el PATH.
+    echo Node.js es requerido para validar el catalogo local.
+    pause
+    exit /b 1
+)
+
+:: 4. Validar disponibilidad de TagUI
 where tagui >nul 2>&1
 if errorlevel 1 (
     color 0c
@@ -27,19 +39,44 @@ if errorlevel 1 (
     exit /b 1
 )
 
+:: 5. Validar existencia del archivo input.csv
 if not exist "input.csv" (
     color 0c
     echo [ERROR] No se encontro el archivo input.csv.
+    echo Cree el archivo con las columnas: producto,marca,cantidad,unidad
     pause
     exit /b 1
 )
 
-echo [OK] TagUI e input.csv detectados correctamente.
-echo Iniciando automatizacion RPA...
-echo (Se abrira Google Chrome VISIBLE para realizar la navegacion e interaccion)
+:: 6. Validar obligatoriamente la combinacion de producto contra el catalogo local
+echo [PASO 1/2] Validando productos contra catalogo local (catalogo/productos.json)...
+echo(
+call node validar_input.js input.csv
+if errorlevel 1 (
+    color 0c
+    echo(
+    echo =====================================================================
+    echo [ERROR] La validacion del producto contra el catalogo ha fallado.
+    echo El RPA NO se iniciara hasta que se definan productos validos.
+    echo =====================================================================
+    echo(
+    pause
+    exit /b 1
+)
+
+if not exist "input_tagui.csv" (
+    color 0c
+    echo [ERROR] No se genero el archivo de trabajo input_tagui.csv.
+    pause
+    exit /b 1
+)
+
+echo(
+echo [PASO 2/2] Iniciando automatizacion RPA en vivo con TagUI...
+echo (Se abrira Google Chrome VISIBLE en pantalla completa F11)
 echo(
 
-call tagui scraper_supermercados.tag input.csv
+call tagui scraper_supermercados.tag input_tagui.csv
 if errorlevel 1 (
     color 0c
     echo(
@@ -54,7 +91,7 @@ if errorlevel 1 (
 echo(
 echo =====================================================================
 echo [OK] El RPA finalizo correctamente.
-echo Los datos han sido guardados en el archivo: resultados.csv
+echo Los datos han sido guardados en el archivo: resultados.csv (15 columnas)
 echo =====================================================================
 echo(
 pause
